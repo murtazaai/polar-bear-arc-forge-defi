@@ -285,7 +285,7 @@ tokio-native, zero Python.
 - [Solana JSON-RPC](https://docs.solana.com/api/http) - On-chain data
 - [SPL Token Program](https://spl.solana.com/token) - Mint account layout
 - [Uniswap v2 whitepaper](https://uniswap.org/whitepaper.pdf) - AMM formula
-- [System Architecture](./docs/system_architecture.md) - System architecture overview
+- [System Architecture](./docs/architecture.md) - System architecture overview
 - [DeFi Math](./docs/defi_math.md) - ARC Forge liquidity mathematics
 
 ---
