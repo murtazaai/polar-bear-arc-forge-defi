@@ -1,0 +1,75 @@
+[
+  {
+    "label": "cargo build (dev)",
+    "command": "cargo build",
+    "args": [],
+    "env": { "CARGO_INCREMENTAL": "1" },
+  },
+  {
+    "label": "cargo build (release)",
+    "command": "cargo build",
+    "args": ["--release"],
+    "env": { "CARGO_INCREMENTAL": "0", "RUSTFLAGS": "-C target-cpu=native" },
+  },
+  {
+    "label": "cargo build (ai-agent feature)",
+    "command": "cargo build",
+    "args": ["--features", "ai-agent"],
+    "env": { "CARGO_INCREMENTAL": "1" },
+  },
+  {
+    "label": "cargo test",
+    "command": "cargo test",
+    "args": ["--workspace", "--", "--test-threads=8"],
+  },
+  {
+    "label": "cargo clippy (strict)",
+    "command": "cargo clippy",
+    "args": ["--all-targets", "--", "-D", "warnings"],
+  },
+  {
+    "label": "cargo check (fast)",
+    "command": "cargo check",
+    "args": ["--all-targets"],
+  },
+  {
+    "label": "cargo fmt",
+    "command": "cargo fmt",
+    "args": ["--all"],
+  },
+  {
+    "label": "run polar-bear-arc-forge (check connectivity)",
+    "command": "cargo run",
+    "args": ["--", "check"],
+  },
+  {
+    "label": "run example: validator_demo",
+    "command": "cargo run",
+    "args": ["--example", "validator_demo"],
+  },
+  {
+    "label": "run example: raydium_demo",
+    "command": "cargo run",
+    "args": ["--example", "raydium_demo"],
+  },
+  {
+    "label": "run example: agent_demo (ai-agent feature)",
+    "command": "cargo run",
+    "args": ["--example", "agent_demo", "--features", "ai-agent"],
+  },
+  {
+    "label": "test: validator_tests",
+    "command": "cargo test",
+    "args": ["--test", "validator_tests"],
+  },
+  {
+    "label": "test: liquidity_tests",
+    "command": "cargo test",
+    "args": ["--test", "liquidity_tests"],
+  },
+  {
+    "label": "test: forge_tests",
+    "command": "cargo test",
+    "args": ["--test", "forge_tests"],
+  },
+]

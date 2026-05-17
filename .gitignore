@@ -1,0 +1,38 @@
+# ── Cargo / Rust ──────────────────────────────────────────────────
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# ── Environment / secrets - NEVER COMMIT ─────────────────────────
+.env
+# .env.*
+/keys/
+*.enc
+**/secrets/
+**/*_secret*
+**/*_private_key*
+**/*api_key*
+config/keys.*
+
+# ── IDE / editor ──────────────────────────────────────────────────
+.vscode/
+.idea/
+*.code-workspace
+.cursor/
+*.swp
+*.swo
+
+# ── Logs / databases ──────────────────────────────────────────────
+/logs/
+*.log
+*.log-*
+*.sqlite
+*.db
+
+# ── OS artifacts ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Mutation testing ──────────────────────────────────────────────
+/mutants.out
+/mutants.out.old

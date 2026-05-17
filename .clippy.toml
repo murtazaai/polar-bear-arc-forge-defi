@@ -1,0 +1,14 @@
+# polar-bear-hft-crypto - Clippy configuration
+# Mirrors the style used in the rig upstream repository.
+
+# Minimum Supported Rust Version - keep in sync with Cargo.toml rust-version.
+msrv = "1.93.1"
+
+# Cognitive complexity threshold for the cognitive_complexity lint.
+cognitive-complexity-threshold = 30
+
+# Maximum number of function arguments before clippy warns.
+too-many-arguments-threshold = 10
+
+# Avoid warning on common "allowlist" patterns that appear throughout the codebase.
+avoid-breaking-exported-api = true

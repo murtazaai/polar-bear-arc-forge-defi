@@ -1,0 +1,29 @@
+# polar-bear-hft-crypto - rustfmt configuration
+# Mirrors the style used in the rig upstream repository.
+
+edition            = "2024"
+max_width          = 100
+tab_spaces         = 4
+hard_tabs          = false
+
+# Imports
+imports_granularity = "Crate"
+group_imports       = "StdExternalCrate"
+
+# Comments
+wrap_comments            = true
+comment_width            = 100
+normalize_comments       = true
+normalize_doc_attributes = true
+
+# Formatting
+use_small_heuristics    = "Default"
+trailing_comma          = "Vertical"
+trailing_semicolon      = true
+newline_style           = "Unix"
+blank_lines_upper_bound = 2
+blank_lines_lower_bound = 0
+
+# Miscellaneous
+format_strings        = false
+format_macro_matchers = true

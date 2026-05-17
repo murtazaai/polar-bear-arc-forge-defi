@@ -1,0 +1,106 @@
+// Project-local debug tasks
+//
+// For more documentation on how to configure debug tasks,
+// see: https://zed.dev/docs/debugger
+[
+  {
+    "label": "Clean polar-bear-arc-forge-defi",
+    "build": {
+      "command": "cargo",
+      "args": ["clean"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
+    // sourceLanguages is required for CodeLLDB (not GDB) when using Rust
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+  {
+    "label": "Build & Debug polar-bear-arc-forge-defi",
+    "build": {
+      "command": "cargo",
+      "args": ["build"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+  {
+    "label": "Release Build & Debug polar-bear-arc-forge-defi",
+    "build": {
+      "command": "cargo",
+      "args": ["build", "--release"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/release/polar-bear-arc-forge-defi",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+  {
+    "label": "AI Agent features - Build & Debug polar-bear-arc-forge-defi",
+    "build": {
+      "command": "cargo",
+      "args": ["build", "--features", "ai-agent"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+  {
+    "label": "Type-check only; no linking",
+    "build": {
+      "command": "cargo",
+      "args": ["check"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+  {
+    "label": "Test all deterministic tests",
+    "build": {
+      "command": "cargo",
+      "args": ["test"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+  {
+    "label": "Test with log output",
+    "build": {
+      "command": "cargo",
+      "args": ["test", "--", "--nocapture"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+  {
+    "label": "Test validator only",
+    "build": {
+      "command": "cargo",
+      "args": ["test", "--test", "validator_tests"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+  {
+    "label": "Test forge only",
+    "build": {
+      "command": "cargo",
+      "args": ["test", "--test", "forge_tests"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+]
