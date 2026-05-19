@@ -292,7 +292,8 @@ tokio-native, zero Python.
 
 ## License
 
-PBS License: [LICENSE-PBS](./LICENSE-PBS)
+Proprietary - © 2026 Murtaza Ali Imtiaz / Polar Bear Systems  
+See [LICENSE-PBS](LICENSE-PBS) for permitted use.
 
 ---
 
