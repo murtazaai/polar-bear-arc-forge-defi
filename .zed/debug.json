@@ -1,104 +1,296 @@
-// Project-local debug tasks
+// .zed/debug.json  ·  polar-bear-arc-forge-defi
 //
-// For more documentation on how to configure debug tasks,
-// see: https://zed.dev/docs/debugger
+// Zed debugger launch configurations (CodeLLDB / LLDB).
+// Binary name: polar-bear-arc-forge  (from [[bin]] in Cargo.toml)
+//              NOTE: package name is "polar-bear-arc-forge-defi" but the compiled
+//              binary is "polar-bear-arc-forge" - these are NOT the same string.
+//
+// Open with: Run → Start Debugging  or  Ctrl/Cmd + Shift + D
+//
+// Pre-requisite: install the CodeLLDB Zed extension.
+//
+// Sections:
+//   CORE        standard dev / release build-and-debug
+//   SUBCOMMANDS debug each CLI subcommand with representative arguments
+//   FEATURES    ai-agent feature-gated build
+//   EXAMPLES    debug the example binaries
+//
+// sourceLanguages: ["rust"] is required for CodeLLDB to resolve Rust type formatters.
 [
+  // ── CORE ───────────────────────────────────────────────────────────────────
+
   {
-    "label": "Clean polar-bear-arc-forge-defi",
-    "build": {
-      "command": "cargo",
-      "args": ["clean"],
-    },
-    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
-    // sourceLanguages is required for CodeLLDB (not GDB) when using Rust
-    "sourceLanguages": ["rust"],
-    "request": "launch",
-    "adapter": "CodeLLDB",
-  },
-  {
-    "label": "Build & Debug polar-bear-arc-forge-defi",
+    "label": "debug · dev build → run check",
     "build": {
       "command": "cargo",
       "args": ["build"],
     },
-    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge",
+    "args": ["check"],
+    "env": {
+      "RUST_LOG": "debug",
+      "SOLANA_RPC_URL": "https://api.devnet.solana.com",
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
     "sourceLanguages": ["rust"],
     "request": "launch",
     "adapter": "CodeLLDB",
   },
   {
-    "label": "Release Build & Debug polar-bear-arc-forge-defi",
+    "label": "debug · release build → run check",
     "build": {
       "command": "cargo",
       "args": ["build", "--release"],
     },
-    "program": "$ZED_WORKTREE_ROOT/target/release/polar-bear-arc-forge-defi",
+    "program": "$ZED_WORKTREE_ROOT/target/release/polar-bear-arc-forge",
+    "args": ["check"],
+    "env": {
+      "RUST_LOG": "info",
+      "SOLANA_RPC_URL": "https://api.devnet.solana.com",
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+
+  // ── SUBCOMMANDS ────────────────────────────────────────────────────────────
+  // Each config builds the dev binary and launches with a specific subcommand.
+
+  {
+    "label": "debug · validate (USDC mainnet - 6 sniper-bot checks)",
+    "build": {
+      "command": "cargo",
+      "args": ["build"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge",
+    "args": [
+      "--rpc-url",
+      "https://api.mainnet-beta.solana.com",
+      "validate",
+      "--mint",
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    ],
+    "env": {
+      "RUST_LOG": "debug",
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
     "sourceLanguages": ["rust"],
     "request": "launch",
     "adapter": "CodeLLDB",
   },
   {
-    "label": "AI Agent features - Build & Debug polar-bear-arc-forge-defi",
+    "label": "debug · validate --json (USDC mainnet, JSON output)",
+    "build": {
+      "command": "cargo",
+      "args": ["build"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge",
+    "args": [
+      "--rpc-url",
+      "https://api.mainnet-beta.solana.com",
+      "validate",
+      "--mint",
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "--json",
+    ],
+    "env": {
+      "RUST_LOG": "warn",
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+  {
+    "label": "debug · raydium (SOL pools, top 5)",
+    "build": {
+      "command": "cargo",
+      "args": ["build"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge",
+    "args": [
+      "raydium",
+      "--mint",
+      "So11111111111111111111111111111111111111112",
+      "--limit",
+      "5",
+    ],
+    "env": {
+      "RUST_LOG": "debug",
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+  {
+    "label": "debug · launch (PBT dry-run: 20 SOL, burn-lp)",
+    // Exercises the full PEV loop without network access.
+    "build": {
+      "command": "cargo",
+      "args": ["build"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge",
+    "args": [
+      "launch",
+      "--name",
+      "Polar Bear Token",
+      "--symbol",
+      "PBT",
+      "--supply",
+      "1000000000000000",
+      "--sol",
+      "20",
+      "--lp-pct",
+      "10",
+      "--burn-lp",
+    ],
+    "env": {
+      "RUST_LOG": "debug",
+      "DRY_RUN": "true",
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+  {
+    "label": "debug · launch --json (PBT, structured output)",
+    "build": {
+      "command": "cargo",
+      "args": ["build"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge",
+    "args": [
+      "launch",
+      "--symbol",
+      "PBT",
+      "--supply",
+      "1000000000000000",
+      "--sol",
+      "20",
+      "--burn-lp",
+      "--json",
+    ],
+    "env": {
+      "RUST_LOG": "warn",
+      "DRY_RUN": "true",
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+  {
+    "label": "debug · launch (shallow liquidity - should be BLOCKED)",
+    // Exercises the readiness-score BLOCK path: 1 SOL is below depth threshold.
+    "build": {
+      "command": "cargo",
+      "args": ["build"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge",
+    "args": [
+      "launch",
+      "--symbol",
+      "TEST",
+      "--supply",
+      "1000000000000000",
+      "--sol",
+      "1",
+      "--lp-pct",
+      "1",
+      // NOTE: no --burn-lp and no --lock-days → expects RISKY anti-rug rating
+    ],
+    "env": {
+      "RUST_LOG": "debug",
+      "DRY_RUN": "true",
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+
+  // ── AI-AGENT FEATURE ───────────────────────────────────────────────────────
+
+  {
+    "label": "debug · agent (ai-agent feature - requires ANTHROPIC_API_KEY in .env)",
+    // Set ANTHROPIC_API_KEY in .env (gitignored) before running.
     "build": {
       "command": "cargo",
       "args": ["build", "--features", "ai-agent"],
     },
-    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
+    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge",
+    "args": [
+      "agent",
+      "--name",
+      "Polar Bear Token",
+      "--symbol",
+      "PBT",
+      "--sol",
+      "20",
+      "--burn-lp",
+    ],
+    "env": {
+      "RUST_LOG": "debug",
+      "DRY_RUN": "true",
+      // ANTHROPIC_API_KEY is loaded from .env via dotenvy at runtime.
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "sourceLanguages": ["rust"],
+    "request": "launch",
+    "adapter": "CodeLLDB",
+  },
+
+  // ── EXAMPLES ───────────────────────────────────────────────────────────────
+  // Examples compile to target/debug/examples/<name>
+
+  {
+    "label": "debug · example: validator_demo",
+    "build": {
+      "command": "cargo",
+      "args": ["build", "--example", "validator_demo"],
+    },
+    "program": "$ZED_WORKTREE_ROOT/target/debug/examples/validator_demo",
+    "args": [],
+    "env": {
+      "RUST_LOG": "debug",
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
     "sourceLanguages": ["rust"],
     "request": "launch",
     "adapter": "CodeLLDB",
   },
   {
-    "label": "Type-check only; no linking",
+    "label": "debug · example: raydium_demo",
     "build": {
       "command": "cargo",
-      "args": ["check"],
+      "args": ["build", "--example", "raydium_demo"],
     },
-    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
+    "program": "$ZED_WORKTREE_ROOT/target/debug/examples/raydium_demo",
+    "args": [],
+    "env": {
+      "RUST_LOG": "debug",
+    },
+    "cwd": "$ZED_WORKTREE_ROOT",
     "sourceLanguages": ["rust"],
     "request": "launch",
     "adapter": "CodeLLDB",
   },
   {
-    "label": "Test all deterministic tests",
+    "label": "debug · example: agent_demo (ai-agent feature)",
     "build": {
       "command": "cargo",
-      "args": ["test"],
+      "args": ["build", "--example", "agent_demo", "--features", "ai-agent"],
     },
-    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
-    "sourceLanguages": ["rust"],
-    "request": "launch",
-    "adapter": "CodeLLDB",
-  },
-  {
-    "label": "Test with log output",
-    "build": {
-      "command": "cargo",
-      "args": ["test", "--", "--nocapture"],
+    "program": "$ZED_WORKTREE_ROOT/target/debug/examples/agent_demo",
+    "args": [],
+    "env": {
+      "RUST_LOG": "debug",
+      // ANTHROPIC_API_KEY loaded from .env via dotenvy at runtime.
     },
-    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
-    "sourceLanguages": ["rust"],
-    "request": "launch",
-    "adapter": "CodeLLDB",
-  },
-  {
-    "label": "Test validator only",
-    "build": {
-      "command": "cargo",
-      "args": ["test", "--test", "validator_tests"],
-    },
-    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
-    "sourceLanguages": ["rust"],
-    "request": "launch",
-    "adapter": "CodeLLDB",
-  },
-  {
-    "label": "Test forge only",
-    "build": {
-      "command": "cargo",
-      "args": ["test", "--test", "forge_tests"],
-    },
-    "program": "$ZED_WORKTREE_ROOT/target/debug/polar-bear-arc-forge-defi",
+    "cwd": "$ZED_WORKTREE_ROOT",
     "sourceLanguages": ["rust"],
     "request": "launch",
     "adapter": "CodeLLDB",

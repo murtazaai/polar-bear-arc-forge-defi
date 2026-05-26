@@ -13,14 +13,13 @@ and deep initial liquidity, powered by [Rig (ARC)](https://rig.rs) AI agents.
 
 ---
 
-
-> for token launches with built-in sniper-bot prevention and deep initial
-> liquidity on Solana."*
+> *"Greenfield DeFi platforms including ARC Forge for token launches with
+> built-in sniper-bot prevention and deep initial liquidity on Solana."*
 >
 > **All operations are DRY-RUN only.** No SOL is spent. No transactions are
-> submitted to any network.  The token validator connects to the live Solana
-> RPC and reads real on-chain data.  The Raydium client calls the real public
-> Raydium v3 REST API.  The Rig (ARC) agent invokes the real Anthropic API
+> submitted to any network. The token validator connects to the live Solana
+> RPC and reads real on-chain data. The Raydium client calls the real public
+> Raydium v3 REST API. The Rig (ARC) agent invokes the real Anthropic API
 > when `ANTHROPIC_API_KEY` is set.
 
 ---
@@ -93,7 +92,7 @@ See `docs/defi_math.md` for the constant-product AMM math behind these ratings.
 ## Stack
 
 | Layer | Technology | Purpose |
-|-------|------------|---------|
+|-------|------------|---------| 
 | AI Agent | [rig-core 0.37](https://rig.rs) | LLM orchestration, PEV loop AI layer |
 | LLM | [claude-sonnet-4-6](https://anthropic.com) | Launch analysis and risk assessment |
 | Async | [tokio 1.x](https://tokio.rs) | Async runtime |
@@ -112,7 +111,7 @@ rustup install stable          # Rust ≥ 1.93.1
 rustup component add rustfmt clippy
 ```
 
-Optional for the AI agent:
+Optional - required only for the AI agent subcommand and `providers` tests:
 
 ```text
 export ANTHROPIC_API_KEY="sk-ant-..."
@@ -123,10 +122,23 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 ```text
 git clone https://github.com/murtazaai/polar-bear-arc-forge-defi
 cd polar-bear-arc-forge-defi
-cp .env.example .env
+cp .env.example .env           # add ANTHROPIC_API_KEY if using --features ai-agent
 cargo build --release
 cargo test
 ```
+
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in values. The `.env` file is gitignored.
+
+| Variable | Default | Required | Description |
+|----------|---------|----------|-------------|
+| `ANTHROPIC_API_KEY` | - | Only for `ai-agent` feature | Obtain at [console.anthropic.com](https://console.anthropic.com) |
+| `SOLANA_RPC_URL` | `https://api.devnet.solana.com` | No | Override with mainnet or a private RPC (e.g. Helius) |
+| `DRY_RUN` | `true` | No | Enforced in code - no real SOL is ever spent |
+| `RUST_LOG` | `info` | No | Tracing level: `error \| warn \| info \| debug \| trace` |
 
 ---
 
@@ -181,16 +193,16 @@ cargo run -- launch \
     --burn-lp
 ```
 
-JSON output:
+JSON output - pipe to `jq` for specific fields:
 
 ```text
 cargo run -- launch --symbol PBT --supply 1000000000000000 --sol 20 --burn-lp \
-    --json | jq '{readiness: .launch_readiness_score, sniper: .sniper_bot_prevention_active}'
+    --json | jq '{readiness: .launch_readiness_score, sniper: .sniper_bot_prevention_active, rating: .liquidity_metrics.anti_rug_rating}'
 ```
 
 ### Rig (ARC) Agent Analysis
 
-Requires `ANTHROPIC_API_KEY`.
+Requires `ANTHROPIC_API_KEY` in `.env` or the environment.
 
 ```text
 cargo run --features ai-agent -- agent \
@@ -207,11 +219,12 @@ structured risk assessment with a `LAUNCH | REVIEW | BLOCK` recommendation via
 
 ```text
 cargo test                                        # all deterministic tests (no network)
-cargo test --test validator_tests                 # sniper-bot prevention
-cargo test --test liquidity_tests                 # AMM model + anti-rug ratings
-cargo test --test forge_tests                     # PEV loop integration
+cargo test --test validator_tests                 # sniper-bot prevention (13 tests)
+cargo test --test liquidity_tests                 # AMM model + anti-rug ratings (11 tests)
+cargo test --test forge_tests                     # PEV loop integration (13 tests)
+cargo test --test integration                     # full simulation + JSON round-trip
 
-# Live provider tests (requires ANTHROPIC_API_KEY)
+# Live provider tests (requires ANTHROPIC_API_KEY, single-threaded to avoid rate limits)
 ANTHROPIC_API_KEY=sk-ant-... \
     cargo test --test providers --features ai-agent -- --ignored --test-threads=1
 ```
@@ -225,7 +238,59 @@ ANTHROPIC_API_KEY=sk-ant-... \
 | `tests/validator_tests.rs` | 13 | None |
 | `tests/liquidity_tests.rs` | 11 | None |
 | `tests/forge_tests.rs` | 13 | None |
-| `tests/providers.rs` | 2 (#[ignore]) | Anthropic API |
+| `tests/integration.rs` | - | None |
+| `tests/providers.rs` | 2 (`#[ignore]`) | Anthropic API |
+
+---
+
+## Zed IDE Configuration
+
+The `.zed/` directory ships two fully pre-configured JSON files for
+[Zed](https://zed.dev) - no manual setup required after opening the folder.
+
+> **Note - binary name vs. package name**: `Cargo.toml` declares
+> `[[bin]] name = "polar-bear-arc-forge"`, so the compiled binary is
+> `target/debug/polar-bear-arc-forge` (not `…-defi`). Both Zed configs
+> use the correct path.
+
+### `.zed/tasks.json` - Task Palette
+
+Open with `Ctrl/Cmd + Shift + P → "task: spawn"` or `"task: rerun last task"`.
+
+Tasks are grouped into seven sections:
+
+| Section | Labels (examples) |
+|---------|-------------------|
+| **BUILD** | `build · dev`, `build · release`, `build · ai-agent feature (dev)`, `build · all features` |
+| **CHECK & LINT** | `check · all targets`, `clippy · strict`, `clippy · all features`, `fmt · check`, `fmt · apply` |
+| **DOCS** | `doc · open (dev)`, `doc · all features (docs.rs simulation)` |
+| **TEST** | `test · all (workspace)`, `test · validator_tests`, `test · liquidity_tests`, `test · forge_tests`, `test · integration`, `test · providers (LIVE)` |
+| **RUN** | `run · check`, `run · validate (USDC mainnet)`, `run · raydium`, `run · launch (PBT demo)`, `run · launch --json \| jq`, `run · agent` |
+| **EXAMPLES** | `example · validator_demo`, `example · raydium_demo`, `example · agent_demo` |
+| **MAINTENANCE** | `cargo clean`, `cargo update`, `cargo audit` |
+
+### `.zed/debug.json` - Debugger Launch Configurations
+
+Open with **Run → Start Debugging** or `Ctrl/Cmd + Shift + D`.
+Requires the **CodeLLDB** Zed extension.
+
+Each config runs a `cargo build` step then launches the binary under the debugger
+with appropriate CLI args and environment variables set.
+
+| Label | Subcommand / scenario |
+|-------|-----------------------|
+| `debug · dev build → run check` | Connectivity check, devnet |
+| `debug · release build → run check` | Same, release binary |
+| `debug · validate (USDC mainnet)` | `validate` with all 6 checks |
+| `debug · validate --json` | Same, structured JSON output |
+| `debug · raydium (SOL pools, top 5)` | `raydium` subcommand |
+| `debug · launch (PBT dry-run: 20 SOL, burn-lp)` | Full PEV loop |
+| `debug · launch --json` | Structured launch simulation output |
+| `debug · launch (shallow liquidity - BLOCKED)` | Exercises BLOCK path |
+| `debug · agent (ai-agent feature)` | Rig AI agent, reads `.env` for key |
+| `debug · example: validator_demo` | Example binary |
+| `debug · example: raydium_demo` | Example binary |
+| `debug · example: agent_demo` | Example binary (ai-agent feature) |
 
 ---
 
@@ -269,7 +334,7 @@ tokio-native, zero Python.
 ## Related Repositories
 
 | Repo | Details |
-|------|-----------|
+|------|---------|
 | [polar-bear-rig-hft](https://github.com/murtazaai/polar-bear-rig-hft) | rig-core HFT + PEV loop |
 | [polar-bear-rig-onchain](https://github.com/murtazaai/polar-bear-rig-onchain) | rig-onchain-kit + SignerContext |
 | [polar-bear-hft-crypto](https://github.com/murtazaai/polar-bear-hft-crypto) | ECDSA/Ed25519 + 7-exchange auth |

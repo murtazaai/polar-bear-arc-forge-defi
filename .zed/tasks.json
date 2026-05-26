@@ -1,75 +1,343 @@
+// .zed/tasks.json  ·  polar-bear-arc-forge-defi
+//
+// Zed task palette for the ARC Forge DeFi platform.
+// Binary name: polar-bear-arc-forge  (see [[bin]] in Cargo.toml)
+// Open with:   Ctrl/Cmd + Shift + P → "task: spawn"  or  "task: rerun last task"
+//
+// Sections:
+//   BUILD        compile (dev / release / feature variants)
+//   CHECK & LINT fast type-check, Clippy, rustfmt
+//   DOCS         rustdoc (local + docs.rs simulation)
+//   TEST         unit + integration suites (deterministic + live)
+//   RUN          CLI subcommand one-liners
+//   EXAMPLES     standalone demo binaries
+//   MAINTENANCE  clean, update, audit
 [
+  // ── BUILD ──────────────────────────────────────────────────────────────────
+
   {
-    "label": "cargo build (dev)",
-    "command": "cargo build",
-    "args": [],
-    "env": { "CARGO_INCREMENTAL": "1" },
+    "label": "build · dev",
+    "command": "cargo",
+    "args": ["build"],
+    "env": {
+      "CARGO_INCREMENTAL": "1",
+      "RUST_LOG": "info",
+    },
   },
   {
-    "label": "cargo build (release)",
-    "command": "cargo build",
-    "args": ["--release"],
-    "env": { "CARGO_INCREMENTAL": "0", "RUSTFLAGS": "-C target-cpu=native" },
+    "label": "build · release",
+    "command": "cargo",
+    "args": ["build", "--release"],
+    "env": {
+      // Incremental disabled: LTO + single-codegen-unit in release profile
+      "CARGO_INCREMENTAL": "0",
+      "RUSTFLAGS": "-C target-cpu=native",
+    },
   },
   {
-    "label": "cargo build (ai-agent feature)",
-    "command": "cargo build",
-    "args": ["--features", "ai-agent"],
-    "env": { "CARGO_INCREMENTAL": "1" },
+    "label": "build · ai-agent feature (dev)",
+    "command": "cargo",
+    "args": ["build", "--features", "ai-agent"],
+    "env": {
+      "CARGO_INCREMENTAL": "1",
+      "RUST_LOG": "info",
+    },
   },
   {
-    "label": "cargo test",
-    "command": "cargo test",
-    "args": ["--workspace", "--", "--test-threads=8"],
+    "label": "build · all features (dev)",
+    "command": "cargo",
+    "args": ["build", "--all-features"],
+    "env": {
+      "CARGO_INCREMENTAL": "1",
+    },
   },
   {
-    "label": "cargo clippy (strict)",
-    "command": "cargo clippy",
-    "args": ["--all-targets", "--", "-D", "warnings"],
+    "label": "build · all features (release)",
+    "command": "cargo",
+    "args": ["build", "--release", "--all-features"],
+    "env": {
+      "CARGO_INCREMENTAL": "0",
+      "RUSTFLAGS": "-C target-cpu=native",
+    },
+  },
+
+  // ── CHECK & LINT ───────────────────────────────────────────────────────────
+
+  {
+    "label": "check · all targets",
+    "command": "cargo",
+    "args": ["check", "--all-targets"],
   },
   {
-    "label": "cargo check (fast)",
-    "command": "cargo check",
-    "args": ["--all-targets"],
+    "label": "check · all targets + all features",
+    "command": "cargo",
+    "args": ["check", "--all-targets", "--all-features"],
   },
   {
-    "label": "cargo fmt",
-    "command": "cargo fmt",
-    "args": ["--all"],
+    "label": "clippy · strict (all targets)",
+    "command": "cargo",
+    "args": ["clippy", "--all-targets", "--", "-D", "warnings"],
   },
   {
-    "label": "run polar-bear-arc-forge (check connectivity)",
-    "command": "cargo run",
-    "args": ["--", "check"],
+    "label": "clippy · strict (all features)",
+    "command": "cargo",
+    "args": [
+      "clippy",
+      "--all-targets",
+      "--all-features",
+      "--",
+      "-D",
+      "warnings",
+    ],
   },
   {
-    "label": "run example: validator_demo",
-    "command": "cargo run",
-    "args": ["--example", "validator_demo"],
+    "label": "fmt · check (dry-run)",
+    "command": "cargo",
+    "args": ["fmt", "--all", "--", "--check"],
   },
   {
-    "label": "run example: raydium_demo",
-    "command": "cargo run",
-    "args": ["--example", "raydium_demo"],
+    "label": "fmt · apply",
+    "command": "cargo",
+    "args": ["fmt", "--all"],
+  },
+
+  // ── DOCS ───────────────────────────────────────────────────────────────────
+
+  {
+    "label": "doc · open (dev)",
+    "command": "cargo",
+    "args": ["doc", "--no-deps", "--open"],
+    "env": {
+      "RUST_LOG": "warn",
+    },
   },
   {
-    "label": "run example: agent_demo (ai-agent feature)",
-    "command": "cargo run",
-    "args": ["--example", "agent_demo", "--features", "ai-agent"],
+    "label": "doc · all features (docs.rs simulation)",
+    // Mirrors [package.metadata.docs.rs] in Cargo.toml:
+    //   all-features = true  +  rustdoc-args = ["--cfg", "docsrs"]
+    "command": "cargo",
+    "args": ["doc", "--no-deps", "--all-features", "--open"],
+    "env": {
+      "RUSTDOCFLAGS": "--cfg docsrs",
+    },
+  },
+
+  // ── TEST ───────────────────────────────────────────────────────────────────
+
+  {
+    "label": "test · all (workspace)",
+    "command": "cargo",
+    "args": ["test", "--workspace"],
+    "env": {
+      "RUST_BACKTRACE": "1",
+    },
   },
   {
-    "label": "test: validator_tests",
-    "command": "cargo test",
-    "args": ["--test", "validator_tests"],
+    "label": "test · all + nocapture (show tracing output)",
+    "command": "cargo",
+    "args": ["test", "--workspace", "--", "--nocapture"],
+    "env": {
+      "RUST_LOG": "debug",
+      "RUST_BACKTRACE": "1",
+    },
   },
   {
-    "label": "test: liquidity_tests",
-    "command": "cargo test",
-    "args": ["--test", "liquidity_tests"],
+    "label": "test · validator_tests (sniper-bot prevention, 13 tests)",
+    "command": "cargo",
+    "args": ["test", "--test", "validator_tests"],
+    "env": {
+      "RUST_BACKTRACE": "1",
+    },
   },
   {
-    "label": "test: forge_tests",
-    "command": "cargo test",
-    "args": ["--test", "forge_tests"],
+    "label": "test · liquidity_tests (AMM model + anti-rug ratings, 11 tests)",
+    "command": "cargo",
+    "args": ["test", "--test", "liquidity_tests"],
+    "env": {
+      "RUST_BACKTRACE": "1",
+    },
+  },
+  {
+    "label": "test · forge_tests (PEV loop integration, 13 tests)",
+    "command": "cargo",
+    "args": ["test", "--test", "forge_tests"],
+    "env": {
+      "RUST_BACKTRACE": "1",
+    },
+  },
+  {
+    "label": "test · integration (PEV loop + JSON round-trip)",
+    "command": "cargo",
+    "args": ["test", "--test", "integration"],
+    "env": {
+      "RUST_BACKTRACE": "1",
+    },
+  },
+  {
+    "label": "test · providers (LIVE - requires ANTHROPIC_API_KEY, 2 #[ignore] tests)",
+    // These tests hit the real Anthropic API. Single-threaded to avoid rate limits.
+    "command": "cargo",
+    "args": [
+      "test",
+      "--test",
+      "providers",
+      "--features",
+      "ai-agent",
+      "--",
+      "--ignored",
+      "--test-threads=1",
+      "--nocapture",
+    ],
+    "env": {
+      "RUST_LOG": "debug",
+      "RUST_BACKTRACE": "1",
+    },
+  },
+
+  // ── RUN ────────────────────────────────────────────────────────────────────
+
+  {
+    "label": "run · check (connectivity: Solana RPC + Raydium API)",
+    "command": "cargo",
+    "args": ["run", "--", "check"],
+    "env": {
+      "RUST_LOG": "info",
+      "SOLANA_RPC_URL": "https://api.devnet.solana.com",
+    },
+  },
+  {
+    "label": "run · validate (USDC mainnet - all 6 checks should pass)",
+    "command": "cargo",
+    "args": [
+      "run",
+      "--",
+      "--rpc-url",
+      "https://api.mainnet-beta.solana.com",
+      "validate",
+      "--mint",
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    ],
+    "env": {
+      "RUST_LOG": "info",
+    },
+  },
+  {
+    "label": "run · raydium (SOL pools, top 5)",
+    "command": "cargo",
+    "args": [
+      "run",
+      "--",
+      "raydium",
+      "--mint",
+      "So11111111111111111111111111111111111111112",
+      "--limit",
+      "5",
+    ],
+    "env": {
+      "RUST_LOG": "info",
+    },
+  },
+  {
+    "label": "run · launch (PBT demo: 20 SOL, burn-lp, 1Q supply)",
+    "command": "cargo",
+    "args": [
+      "run",
+      "--",
+      "launch",
+      "--name",
+      "Polar Bear Token",
+      "--symbol",
+      "PBT",
+      "--supply",
+      "1000000000000000",
+      "--sol",
+      "20",
+      "--lp-pct",
+      "10",
+      "--burn-lp",
+    ],
+    "env": {
+      "RUST_LOG": "info",
+      "DRY_RUN": "true",
+    },
+  },
+  {
+    "label": "run · launch --json | jq (readiness + sniper fields only)",
+    "command": "bash",
+    "args": [
+      "-c",
+      "cargo run -- launch --symbol PBT --supply 1000000000000000 --sol 20 --burn-lp --json | jq '{readiness: .launch_readiness_score, sniper: .sniper_bot_prevention_active, rating: .liquidity_metrics.anti_rug_rating}'",
+    ],
+    "env": {
+      "RUST_LOG": "error",
+      "DRY_RUN": "true",
+    },
+  },
+  {
+    "label": "run · agent (ai-agent feature - requires ANTHROPIC_API_KEY)",
+    "command": "cargo",
+    "args": [
+      "run",
+      "--features",
+      "ai-agent",
+      "--",
+      "agent",
+      "--name",
+      "Polar Bear Token",
+      "--symbol",
+      "PBT",
+      "--sol",
+      "20",
+      "--burn-lp",
+    ],
+    "env": {
+      "RUST_LOG": "info",
+      "DRY_RUN": "true",
+    },
+  },
+
+  // ── EXAMPLES ───────────────────────────────────────────────────────────────
+
+  {
+    "label": "example · validator_demo (USDC mainnet validation)",
+    "command": "cargo",
+    "args": ["run", "--example", "validator_demo"],
+    "env": {
+      "RUST_LOG": "info",
+    },
+  },
+  {
+    "label": "example · raydium_demo (Raydium v3 pool query)",
+    "command": "cargo",
+    "args": ["run", "--example", "raydium_demo"],
+    "env": {
+      "RUST_LOG": "info",
+    },
+  },
+  {
+    "label": "example · agent_demo (ai-agent feature - requires ANTHROPIC_API_KEY)",
+    "command": "cargo",
+    "args": ["run", "--example", "agent_demo", "--features", "ai-agent"],
+    "env": {
+      "RUST_LOG": "info",
+    },
+  },
+
+  // ── MAINTENANCE ────────────────────────────────────────────────────────────
+
+  {
+    "label": "cargo clean",
+    "command": "cargo",
+    "args": ["clean"],
+  },
+  {
+    "label": "cargo update (refresh Cargo.lock)",
+    "command": "cargo",
+    "args": ["update"],
+  },
+  {
+    "label": "cargo audit (supply-chain security - requires `cargo install cargo-audit`)",
+    "command": "cargo",
+    "args": ["audit"],
   },
 ]
