@@ -1,4 +1,4 @@
-# polar-bear-hft-crypto - rustfmt configuration
+# polar-bear-arc-forge-defi - rustfmt configuration
 # Mirrors the style used in the rig upstream repository.
 
 edition            = "2024"

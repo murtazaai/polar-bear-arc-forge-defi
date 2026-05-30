@@ -115,7 +115,7 @@ impl RaydiumClient {
         Self {
             http: Client::builder()
                 .timeout(std::time::Duration::from_secs(20))
-                .user_agent("polar-bear-arc-forge-defi/0.2.0")
+                .user_agent("polar-bear-arc-forge-defi/0.2.1")
                 .build()
                 .expect("reqwest Client construction is infallible"),
         }

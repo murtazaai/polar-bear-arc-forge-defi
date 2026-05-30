@@ -7,25 +7,27 @@ polar-bear-arc-forge-defi/
 ├── Cargo.toml             Rust 2024 edition; all dependencies; lints; release profile
 ├── Cargo.lock             Committed (binary crate); delete + regenerate on dep changes
 ├── rustfmt.toml           Code-style rules (100 cols, 2024 edition, crate-level imports)
-├── .clippy.toml           Clippy config (MSRV 1.93.1, complexity thresholds)
+├── .clippy.toml           Clippy config (MSRV 1.85.0, complexity thresholds)
 ├── .gitignore             Focused Rust-only ignore file; secrets never committed
 ├── .env.example           Template: ANTHROPIC_API_KEY, SOLANA_RPC_URL, DRY_RUN
-├── LICENSE-PBS            Polar Bear Systems proprietary licence
+├── LICENSE-MIT            MIT licence (crates.io: MIT OR Apache-2.0 dual-licence)
+├── LICENSE-APACHE         Apache 2.0 licence
 ├── README.md              Project overview, architecture, quick-start
 ├── CHANGELOG.md           Version history (Semantic Versioning)
 ├── CONTRIBUTING.md        Dev setup, workflow, code-style, CI description
-├── BUG-FIXES.md           Root-cause analysis of 7 resolved issues
+├── BUG-FIXES.md           Root-cause analysis of 12 resolved issues
 ├── FILE_STRUCTURE.md      This file
 │
 │  ── GitHub Actions CI ──────────────────────────────────────────────
 ├── .github/
 │   └── workflows/
-│       └── ci.yml         fmt → clippy → build → test → docs → MSRV (1.93.1)
+│       └── ci.yml         fmt → clippy → build → test → doc → msrv (1.85.0)
 │
 │  ── Zed IDE config ─────────────────────────────────────────────────
 ├── .zed/
 │   ├── tasks.json         Cargo build / test / check / example tasks
-│   └── debug.json         CodeLLDB debug launch config
+│   ├── debug.json         CodeLLDB debug launch config
+│   └── settings.json      rust-analyzer: clippy check, inlay hints, proc macros
 │
 │  ── Documentation ──────────────────────────────────────────────────
 ├── docs/
@@ -68,6 +70,7 @@ polar-bear-arc-forge-defi/
 │
 │  ── Integration tests (no API key required) ─────────────────────────
 ├── tests/
+│   ├── integration.rs        8 tests  - full PEV loop, validator, liquidity, JSON round-trip
 │   ├── validator_tests.rs    13 tests - freeze/mint authority, decimals, risk score
 │   ├── liquidity_tests.rs    11 tests - price, AMM model, anti-rug ratings, depth score
 │   ├── forge_tests.rs        13 tests - PEV loop, JSON round-trip, readiness score
@@ -83,7 +86,7 @@ polar-bear-arc-forge-defi/
 | Decision | Rationale |
 |---|---|
 | Lib + bin targets | Integration tests are external crates; lib exposes `polar_bear_arc_forge_defi::` |
-| Rust 2024 edition | Matches the rig upstream repository and MSRV 1.93.1 |
+| Rust 2024 edition | Matches the rig upstream repository and MSRV 1.85.0 |
 | Submodule structure | Each domain has its own directory with `mod.rs` re-exports; mirrors `polar-bear-hft-crypto` |
 | No `solana-sdk` | Avoids version conflicts with `rig-core`; manual 82-byte mint decoder is transparent |
 | `ai-agent` feature flag | Keeps `rig-core` out of the default build; mirrors rig-hft naming convention |
@@ -92,3 +95,5 @@ polar-bear-arc-forge-defi/
 | `dry_run = true` always | No real SOL is ever spent; enforced in `ArcForgeLauncher::build()` |
 | `#[ignore]` on live tests | Prevents CI failures when `ANTHROPIC_API_KEY` is absent |
 | `strip = "debuginfo"` | Reduces binary size; mirrors rig release profile |
+| `MIT OR Apache-2.0` | Valid SPDX dual-license required by crates.io; both LICENSE files present |
+| MSRV `1.85.0` | Minimum for Rust 2024 edition; aligns with process document standard |

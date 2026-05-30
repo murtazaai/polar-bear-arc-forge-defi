@@ -2,6 +2,138 @@
 
 ---
 
+## Fix 8 - Invalid SPDX license `LicensePBS` blocks `cargo publish`
+
+**File**: `Cargo.toml`, `LICENSE-PBS` → `LICENSE-MIT` + `LICENSE-APACHE`
+
+**Root Cause**: `v0.1.0` / `v0.2.0` used a proprietary `LICENSE-PBS` file and
+set `license = "LicensePBS"` in `Cargo.toml`.  `cargo publish` requires a valid
+[SPDX 2.x](https://spdx.org/licenses/) expression.  `"LicensePBS"` is not in the
+SPDX license list and causes an immediate publish rejection:
+
+```
+error: invalid license `LicensePBS`
+```
+
+Additionally, the `AND/OR` operator is not a valid SPDX combinator — only `AND`,
+`OR`, and `WITH` are defined.
+
+**Fix**: Replace `LICENSE-PBS` with `LICENSE-MIT` and `LICENSE-APACHE`.  Set:
+
+```toml
+# Before (broken)
+license = "LicensePBS"
+
+# After (correct)
+license = "MIT OR Apache-2.0"
+```
+
+Both physical license files must be present in the repository root; crates.io
+validates their existence during publish.
+
+---
+
+## Fix 9 - Wrong MSRV `1.93.1` — Rust 2024 minimum is `1.85.0`
+
+**File**: `Cargo.toml`, `.clippy.toml`
+
+**Root Cause**: `v0.2.0` set `rust-version = "1.93.1"` and `msrv = "1.93.1"` in
+`.clippy.toml`.  Rust 2024 edition requires a minimum of **1.85.0** (stabilised
+February 2025).  Advertising `1.93.1` overstates the MSRV, may block users on
+older stable toolchains, and deviates from the process document standard
+(`rust-version = "1.85.0"`).
+
+**Fix**:
+
+```toml
+# Cargo.toml - Before (overstated)
+rust-version = "1.93.1"
+
+# Cargo.toml - After (correct Rust 2024 minimum)
+rust-version = "1.85.0"
+```
+
+```toml
+# .clippy.toml - Before
+msrv = "1.93.1"
+
+# .clippy.toml - After
+msrv = "1.85.0"
+```
+
+The CI MSRV job was updated to pin `dtolnay/rust-toolchain@1.85.0` accordingly.
+
+---
+
+## Fix 10 - Missing `[[example]]` declarations for `raydium_demo` and `validator_demo`
+
+**File**: `Cargo.toml`
+
+**Root Cause**: `v0.2.0` added `examples/raydium_demo.rs` and
+`examples/validator_demo.rs` to the repository but only declared `agent_demo` in
+`Cargo.toml` under `[[example]]`.  Without explicit declarations Cargo auto-discovers
+examples, but they are invisible to docs.rs, `cargo publish` metadata, and the
+Zed task palette's `--example` args.  Also, the `exclude` field was absent, meaning
+development files (`.env`, `.gitignore`) were included in the crates.io tarball.
+
+**Fix**: Add both missing `[[example]]` entries and an `exclude` list:
+
+```toml
+# Before (only agent_demo declared)
+[[example]]
+name              = "agent_demo"
+required-features = ["ai-agent"]
+
+# After (all three declared)
+[[example]]
+name              = "agent_demo"
+required-features = ["ai-agent"]
+
+[[example]]
+name = "raydium_demo"
+
+[[example]]
+name = "validator_demo"
+
+# Added
+exclude = [".env", ".env.example", ".gitignore", "keys/"]
+```
+
+---
+
+## Fix 11 - Copy-paste project header in `.clippy.toml` and `rustfmt.toml`
+
+**Files**: `.clippy.toml`, `rustfmt.toml`
+
+**Root Cause**: Both files were copied from `polar-bear-hft-crypto` and retained
+that project's name in the comment header.  While functionally harmless, it creates
+confusion during audits and violates the standard that every config file correctly
+identifies its owning project.
+
+**Fix**: Updated both headers to read `polar-bear-arc-forge-defi`.
+
+---
+
+## Fix 12 - Missing `.github/workflows/ci.yml` and `.zed/settings.json`
+
+**Files**: `.github/workflows/ci.yml`, `.zed/settings.json`
+
+**Root Cause**: The `CHANGELOG.md` for `v0.2.0` lists `ci.yml` as added, but no
+`ci.yml` was present in the archive.  `.zed/settings.json` was referenced in the
+`FILE_STRUCTURE.md` and the process document but also absent.
+
+**Fix**:
+- Added `.github/workflows/ci.yml` with the canonical 6-job pipeline:
+  `fmt → clippy → build → test → doc → msrv`.  The MSRV job pins
+  `dtolnay/rust-toolchain@1.85.0`.  `SKIP_LLM` is not needed here (no
+  `SKIP_LLM` pattern in this codebase); live provider tests use `#[ignore]`
+  and are skipped automatically.
+- Added `.zed/settings.json` with rust-analyzer wired to clippy, separate
+  `target/rust-analyzer` dir, full inlay hints, proc macros, and
+  `allFeatures = true` so `ai-agent`-gated symbols resolve in the IDE.
+
+---
+
 ## Fix 1 - `Arc<anthropic::Client>` in `ArcForgeAgent`
 
 **File**: `src/agent/arc_forge_agent.rs`
@@ -49,9 +181,6 @@ use rig_core::{
     providers::anthropic,
 };
 ```
-
-This matches the canonical import in all official rig 0.36+ examples and
-documentation, and in `polar-bear-hft-crypto/src/agent/hft_agent.rs`.
 
 ---
 

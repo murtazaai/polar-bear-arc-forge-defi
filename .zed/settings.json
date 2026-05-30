@@ -1,0 +1,92 @@
+// .zed/settings.json  ·  polar-bear-arc-forge-defi
+//
+// Project-level Zed settings for the ARC Forge DeFi platform.
+// Global settings (git, themes, keymaps) live in ~/.config/zed/settings.json.
+//
+// rust-analyzer is wired to clippy (not cargo check) to surface the same
+// lints the CI pipeline enforces.  A separate target directory prevents
+// rust-analyzer builds from invalidating the main build cache.
+{
+  "languages": {
+    "Rust": {
+      "format_on_save": "on",
+      "formatter": {
+        "language_server": {
+          "name": "rust-analyzer"
+        }
+      }
+    }
+  },
+
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        // ── Check / lint ─────────────────────────────────────────────────────
+        // Use clippy for on-save diagnostics - matches CI (`-D warnings`).
+        "check": {
+          "command": "clippy",
+          "extraArgs": ["--", "-D", "warnings"],
+          "allTargets": true
+        },
+
+        // ── Target directory ─────────────────────────────────────────────────
+        // Keeps rust-analyzer incremental artefacts separate from `cargo build`
+        // output so neither invalidates the other's cache.
+        "rust": {
+          "analyzerTargetDir": "target/rust-analyzer"
+        },
+
+        // ── Proc macros ──────────────────────────────────────────────────────
+        // Required for tokio::main, clap derive, thiserror, serde derive.
+        "procMacro": {
+          "enable": true
+        },
+
+        // ── Inlay hints ──────────────────────────────────────────────────────
+        // Full type inference hints - valuable for complex async + rig-core generics.
+        "inlayHints": {
+          "typeHints": {
+            "enable": true
+          },
+          "parameterHints": {
+            "enable": true
+          },
+          "chainingHints": {
+            "enable": true
+          },
+          "closureCaptureHints": {
+            "enable": true
+          },
+          "reborrowHints": {
+            "enable": "mutable"
+          },
+          "lifetimeElisionHints": {
+            "enable": "skip_trivial"
+          }
+        },
+
+        // ── Imports ──────────────────────────────────────────────────────────
+        // Mirrors rustfmt.toml: imports_granularity = "Crate"
+        "imports": {
+          "granularity": {
+            "group": "crate"
+          },
+          "prefix": "plain",
+          "group": {
+            "enable": true
+          }
+        },
+
+        // ── Cargo ────────────────────────────────────────────────────────────
+        // Build all features so rust-analyzer resolves `ai-agent`-gated items.
+        "cargo": {
+          "allFeatures": true,
+          "loadOutDirsFromCheck": true,
+          "buildScripts": {
+            "enable": true
+          }
+        }
+      }
+    }
+  }
+}

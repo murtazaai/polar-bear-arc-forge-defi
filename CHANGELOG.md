@@ -10,6 +10,41 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [0.2.1] - 2026-05-30
+
+### Fixed (crates.io publication readiness — Stage 08)
+
+- **License** — replaced proprietary `LICENSE-PBS` with `MIT OR Apache-2.0`
+  dual-license (`LICENSE-MIT` + `LICENSE-APACHE`); `cargo publish` requires a
+  valid SPDX expression and the actual license files to be present
+- **`Cargo.toml` `license` field** — changed from `"LicensePBS"` (invalid SPDX)
+  to `"MIT OR Apache-2.0"` (valid SPDX per `cargo publish` requirements)
+- **`Cargo.toml` `rust-version`** — corrected from `"1.93.1"` to `"1.85.0"`;
+  1.85.0 is the minimum required for Rust 2024 edition per the process document
+  (`rust-version = "1.85.0"`)
+- **`Cargo.toml` missing `[[example]]` entries** — added `raydium_demo` and
+  `validator_demo` entries (only `agent_demo` was declared; the other two
+  examples existed in `examples/` but were undeclared)
+- **`Cargo.toml` `exclude`** — added `.env`, `.env.example`, `.gitignore`,
+  `keys/` to the `exclude` list to keep the crates.io tarball clean
+- **`.clippy.toml`** — corrected project header from `polar-bear-hft-crypto`
+  to `polar-bear-arc-forge-defi`; updated `msrv` to `"1.85.0"` to match
+  the corrected `Cargo.toml` `rust-version`
+- **`rustfmt.toml`** — corrected project header from `polar-bear-hft-crypto`
+  to `polar-bear-arc-forge-defi`
+
+### Added
+
+- **`.github/workflows/ci.yml`** — full CI pipeline: `fmt → clippy → build →
+  test → doc → msrv`; MSRV job pins Rust 1.85.0; live provider tests
+  gated behind `#[ignore]` are never run in CI; doc step uses
+  `RUSTDOCFLAGS="--cfg docsrs -D warnings"` mirroring `[package.metadata.docs.rs]`
+- **`.zed/settings.json`** — rust-analyzer project-level config: clippy as
+  check command, separate `target/rust-analyzer` dir, full inlay hints,
+  proc macros enabled, `allFeatures = true` so `ai-agent`-gated items resolve
+
+---
+
 ## [0.2.0] - 2026-05-17
 
 ### Added

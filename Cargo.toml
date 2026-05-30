@@ -1,31 +1,39 @@
 [package]
 name        = "polar-bear-arc-forge-defi"
-version     = "0.2.0"
+version     = "0.2.1"
 edition     = "2024"
-rust-version = "1.93.1"
+rust-version = "1.85.0"                    # Rust 2024 minimum per process doc
 authors     = ["Murtaza Ali Imtiaz <very.kool.king@gmail.com>"]
 description = "ARC Forge DeFi platform - Solana token launch with sniper-bot prevention and deep initial liquidity, powered by Rig (ARC) AI agents"
-license     = "LicensePBS"
+license     = "MIT OR Apache-2.0"          # valid SPDX; AND/OR is WRONG
 repository  = "https://github.com/murtazaai/polar-bear-arc-forge-defi"
 keywords    = ["solana", "defi", "rig-arc", "sniper-bot", "hft"]
 categories  = ["cryptography::cryptocurrencies"]
 readme      = "README.md"
+exclude     = [".env", ".env.example", ".gitignore", "keys/"]
 
+# ── BINARIES ──────────────────────────────────────────────────────────────────
 [[bin]]
 name = "polar-bear-arc-forge"
 path = "src/main.rs"
 
+# ── EXAMPLES ──────────────────────────────────────────────────────────────────
 [[example]]
 name              = "agent_demo"
 required-features = ["ai-agent"]
 
-# Docs.rs - build all features, inject the docsrs cfg flag so conditional items
-# are visible.
+[[example]]
+name = "raydium_demo"
+
+[[example]]
+name = "validator_demo"
+
+# ── Docs.rs - build all features, inject docsrs cfg flag ─────────────────────
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
-# Workspace-wide lints - mirrors the rig upstream lint table.
+# ── Workspace-wide lints - mirrors the rig upstream lint table ────────────────
 [lints.rust]
 unused       = "warn"
 missing_docs = "warn"
