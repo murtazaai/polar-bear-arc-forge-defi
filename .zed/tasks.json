@@ -74,6 +74,11 @@
     "args": ["check", "--all-targets", "--all-features"],
   },
   {
+    "label": "clippy · no lint warnings",
+    "command": "cargo",
+    "args": ["clippy", "--all-targets"],
+  },
+  {
     "label": "clippy · strict (all targets)",
     "command": "cargo",
     "args": ["clippy", "--all-targets", "--", "-D", "warnings"],
@@ -124,6 +129,14 @@
 
   // ── TEST ───────────────────────────────────────────────────────────────────
 
+  {
+    "label": "test · tests pass",
+    "command": "cargo",
+    "args": ["test"],
+    "env": {
+      "RUST_BACKTRACE": "1",
+    },
+  },
   {
     "label": "test · all (workspace)",
     "command": "cargo",
