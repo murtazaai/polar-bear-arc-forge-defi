@@ -170,8 +170,12 @@ fn test_liquidity_metrics_price_consistency() {
     let config = safe_launch_config();
     let m = DeepLiquidityProtocol::compute(&config);
 
+
     // Price × total supply ≈ market cap (within floating-point tolerance)
-    let total_adjusted = config.total_supply as f64 / 10f64.powi(config.decimals as i32);
+    let supply_hi = f64::from(u32::try_from(config.total_supply >> 32).unwrap_or(u32::MAX));
+    let supply_lo = f64::from(u32::try_from(config.total_supply & 0xFFFF_FFFF).unwrap_or(u32::MAX));
+    let total_adjusted =
+        (supply_hi * 4_294_967_296.0 + supply_lo) / 10f64.powi(i32::from(config.decimals));
     let expected_mcap = m.estimated_initial_price_usd * total_adjusted;
     let diff = (m.estimated_market_cap_usd - expected_mcap).abs();
     assert!(
@@ -187,7 +191,7 @@ fn test_liquidity_tokens_in_pool() {
     let config = safe_launch_config();
     let m = DeepLiquidityProtocol::compute(&config);
 
-    let expected = (config.total_supply as f64 * 0.10) as u64; // 10% alloc
+    let expected = u64::try_from(u128::from(config.total_supply) * 10 / 100).unwrap_or(u64::MAX); // 10% alloc
     assert_eq!(m.tokens_in_pool, expected);
 }
 

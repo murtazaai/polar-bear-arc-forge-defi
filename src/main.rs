@@ -172,34 +172,15 @@ async fn main() -> Result<()> {
     let _ = dotenvy::dotenv();
 
     match cli.command {
-        // ── validate ──────────────────────────────────────────────────────────
-        Commands::Validate { mint, json } => {
-            let report = TokenValidator::new(&cli.rpc_url).validate(&mint).await?;
-            if json {
-                println!("{}", serde_json::to_string_pretty(&report)?);
-            } else {
-                print_validation(&report);
-            }
-        }
-
-        // ── raydium ───────────────────────────────────────────────────────────
+        Commands::Validate { mint, json } => run_validate(&cli.rpc_url, &mint, json).await?,
         Commands::Raydium {
             mint,
             pool_type,
             limit,
             json,
         } => {
-            let client = RaydiumClient::new();
-            if json {
-                let pools = client.get_pools_for_mint(&mint, &pool_type, limit).await?;
-                println!("{}", serde_json::to_string_pretty(&pools)?);
-            } else {
-                let summary = client.pool_health_summary(&mint).await;
-                print_raydium(&summary);
-            }
+            run_raydium(&mint, &pool_type, limit, json).await?;
         }
-
-        // ── launch ────────────────────────────────────────────────────────────
         Commands::Launch {
             supply,
             decimals,
@@ -215,19 +196,8 @@ async fn main() -> Result<()> {
             let cfg = build_config(
                 name, symbol, supply, decimals, sol, lp_pct, burn_lp, lock_days,
             );
-            let launcher = ArcForgeLauncher::new(&cli.rpc_url);
-            let sim = match mint {
-                Some(ref addr) => launcher.simulate_existing_mint(addr, cfg).await?,
-                None => launcher.simulate_planned_launch(cfg),
-            };
-            if json {
-                println!("{}", serde_json::to_string_pretty(&sim)?);
-            } else {
-                sim.print_report();
-            }
+            run_launch(&cli.rpc_url, cfg, mint, json).await?;
         }
-
-        // ── agent ─────────────────────────────────────────────────────────────
         Commands::Agent {
             supply,
             decimals,
@@ -238,52 +208,121 @@ async fn main() -> Result<()> {
             burn_lp,
             json,
         } => {
-            let cfg = build_config(name, symbol, supply, decimals, sol, lp_pct, burn_lp, 0);
-            let launcher = ArcForgeLauncher::new(&cli.rpc_url);
-            let mut sim = launcher.simulate_planned_launch(cfg);
-
-            println!("\n🤖  Invoking Rig (ARC) agent via rig-core…");
-            match ArcForgeAgent::new() {
-                Ok(agent) => match agent.analyse_simulation(&sim).await {
-                    Ok(analysis) => sim.agent_analysis = Some(analysis),
-                    Err(e) => {
-                        eprintln!("⚠️  Agent error: {e}");
-                        sim.agent_analysis = Some(format!("Agent error: {e}"));
-                    }
-                },
-                Err(e) => eprintln!(
-                    "⚠️  Could not initialise agent: {e}\n   Ensure ANTHROPIC_API_KEY is set."
-                ),
-            }
-
-            if json {
-                println!("{}", serde_json::to_string_pretty(&sim)?);
-            } else {
-                sim.print_report();
-            }
+            run_agent(
+                &cli.rpc_url,
+                name,
+                symbol,
+                supply,
+                decimals,
+                sol,
+                lp_pct,
+                burn_lp,
+                json,
+            )
+            .await?;
         }
-
-        // ── check ─────────────────────────────────────────────────────────────
-        Commands::Check => {
-            println!("🔍  Connectivity check\n");
-            print!("  Solana RPC ({})  … ", cli.rpc_url);
-            match SolanaRpcClient::new(&cli.rpc_url).get_slot().await {
-                Ok(slot) => println!("✅  slot = {slot}"),
-                Err(e) => println!("❌  {e}"),
-            }
-            print!("  Raydium v3 API                  … ");
-            match RaydiumClient::new()
-                .get_pools_for_mint("So11111111111111111111111111111111111111112", "all", 1)
-                .await
-            {
-                Ok(pools) => println!("✅  {} pool(s) returned for SOL", pools.len()),
-                Err(e) => println!("❌  {e}"),
-            }
-            println!("\n  All checks complete.");
-        }
+        Commands::Check => run_check(&cli.rpc_url).await,
     }
 
     Ok(())
+}
+
+// ── Command handlers ──────────────────────────────────────────────────────────
+
+async fn run_validate(rpc_url: &str, mint: &str, json: bool) -> Result<()> {
+    let report = TokenValidator::new(rpc_url).validate(mint).await?;
+    if json {
+        println!("{}", serde_json::to_string_pretty(&report)?);
+    } else {
+        print_validation(&report);
+    }
+    Ok(())
+}
+
+async fn run_raydium(mint: &str, pool_type: &str, limit: u32, json: bool) -> Result<()> {
+    let client = RaydiumClient::new();
+    if json {
+        let pools = client.get_pools_for_mint(mint, pool_type, limit).await?;
+        println!("{}", serde_json::to_string_pretty(&pools)?);
+    } else {
+        let summary = client.pool_health_summary(mint).await;
+        print_raydium(&summary);
+    }
+    Ok(())
+}
+
+async fn run_launch(
+    rpc_url: &str,
+    cfg: LaunchConfig,
+    mint: Option<String>,
+    json: bool,
+) -> Result<()> {
+    let launcher = ArcForgeLauncher::new(rpc_url);
+    let sim = match mint {
+        Some(ref addr) => launcher.simulate_existing_mint(addr, cfg).await?,
+        None => launcher.simulate_planned_launch(cfg),
+    };
+    if json {
+        println!("{}", serde_json::to_string_pretty(&sim)?);
+    } else {
+        sim.print_report();
+    }
+    Ok(())
+}
+
+async fn run_agent(
+    rpc_url: &str,
+    name: String,
+    symbol: String,
+    supply: u64,
+    decimals: u8,
+    sol: f64,
+    lp_pct: f64,
+    burn_lp: bool,
+    json: bool,
+) -> Result<()> {
+    let cfg = build_config(name, symbol, supply, decimals, sol, lp_pct, burn_lp, 0);
+    let launcher = ArcForgeLauncher::new(rpc_url);
+    let mut sim = launcher.simulate_planned_launch(cfg);
+
+    println!("\n🤖  Invoking Rig (ARC) agent via rig-core…");
+    match ArcForgeAgent::new() {
+        Ok(agent) => match agent.analyse_simulation(&sim).await {
+            Ok(analysis) => sim.agent_analysis = Some(analysis),
+            Err(e) => {
+                eprintln!("⚠️  Agent error: {e}");
+                sim.agent_analysis = Some(format!("Agent error: {e}"));
+            }
+        },
+        Err(e) => {
+            eprintln!("⚠️  Could not initialise agent: {e}\n   Ensure ANTHROPIC_API_KEY is set.");
+        }
+    }
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&sim)?);
+    } else {
+        sim.print_report();
+    }
+    Ok(())
+}
+
+async fn run_check(rpc_url: &str) {
+    println!("🔍  Connectivity check\n");
+    print!("  Solana RPC ({rpc_url})  … ");
+    match SolanaRpcClient::new(rpc_url).get_slot().await {
+        Ok(slot) => println!("✅  slot = {slot}"),
+        Err(e) => println!("❌  {e}"),
+    }
+    print!("  Raydium v3 API                  … ");
+    match RaydiumClient::new()
+        .get_pools_for_mint("So11111111111111111111111111111111111111112", "all", 1)
+        .await
+    {
+        Ok(pools) => println!("✅  {} pool(s) returned for SOL", pools.len()),
+        Err(e) => println!("❌  {e}"),
+    }
+    println!("\n  All checks complete.");
 }
 
 // ── Display helpers ───────────────────────────────────────────────────────────
