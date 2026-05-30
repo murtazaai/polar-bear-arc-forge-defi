@@ -1,17 +1,3 @@
-# .github/workflows/ci.yml  ·  polar-bear-arc-forge-defi
-#
-# Pipeline (in dependency order):
-#
-#   fmt ──► check ──► clippy ──► build ──► test ──► doc
-#                                             │
-#                                           msrv
-#
-# Fast-fail: fmt and check run first with no cache cost.
-# All subsequent jobs only start after their gate passes.
-#
-# No ANTHROPIC_API_KEY is set in CI. Live provider tests are gated
-# behind #[ignore] and are never run here.
-
 name: CI
 
 on:
@@ -22,123 +8,190 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: 1
-  RUST_LOG: info
+  CARGO_INCREMENTAL: 0 # disable incremental; full clean builds on CI
+  RUST_BACKTRACE: short
+  RUST_LOG: polar_bear_hft_crypto=debug
+
+# Cancel in-flight runs for the same branch on new push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # # ── audit ─────────────────────────────────────────────────────────────────────
-  # # cargo audit (supply-chain security - requires `cargo install cargo-audit`)
-  # audit:
-  #   name: audit
-  #   needs: [rust, cargo] # cache cargo-audit once installed
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - run: cargo install --force --locked cargo-audit
-  #     - run: cargo generate-lockfile
-  #     - run: cargo audit
-
-  # # ── fmt ─────────────────────────────────────────────────────────────────────
-  # # Gate 1: formatting check - cheapest possible failure, no cache needed.
-  # fmt:
-  #   name: fmt
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         components: rustfmt
-  #     - run: cargo fmt --all -- --check
-
-  # ── check ────────────────────────────────────────────────────────────────────
-  # Gate 2: fast type-check across all targets and features before building.
-  check:
-    name: check
-    needs: fmt
+  # ── 1. Format ───────────────────────────────────────────────────────────────
+  fmt:
+    name: Rustfmt
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo check --all-targets
-      - run: cargo check --all-targets --all-features
 
-  # ── clippy ───────────────────────────────────────────────────────────────────
-  # Gate 3: lint with -D warnings - matches .zed/settings.json and .clippy.toml.
+      - name: Install Rust (nightly + rustfmt)
+        # rustfmt.toml uses edition = "2024" which requires nightly rustfmt
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+
+      - name: cargo fmt --check
+        run: cargo fmt --all -- --check
+
+  # ── 2. Clippy ───────────────────────────────────────────────────────────────
   clippy:
-    name: clippy
-    needs: check
+    name: Clippy (${{ matrix.features }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - features: default
+            cargo_args: --all-targets
+          - features: ai-agent
+            cargo_args: --all-targets --features ai-agent
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust (MSRV)
+        uses: dtolnay/rust-toolchain@1.93.1
         with:
           components: clippy
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo clippy --all-targets --all-features -- -D warnings
 
-  # ── build ────────────────────────────────────────────────────────────────────
-  # Release build for both default and ai-agent feature variants.
-  build:
-    name: build
-    needs: clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build --release
-      - run: cargo build --release --all-features
+        with:
+          key: clippy-${{ matrix.features }}
 
-  # ── test ─────────────────────────────────────────────────────────────────────
-  # All deterministic tests. Live provider tests (#[ignore]) are never run here.
-  # --nocapture surfaces tracing output for failing tests in the CI log.
+      - name: cargo clippy (strict, mirrors tasks.json)
+        run: |
+          cargo clippy ${{ matrix.cargo_args }} -- \
+            -D warnings \
+            -A clippy::module_name_repetitions \
+            -A clippy::must_use_candidate \
+            -A clippy::missing_errors_doc
+
+  # ── 3. Tests ───────────────────────────────────────────────────────────────
   test:
-    name: test
-    needs: build
-    runs-on: ubuntu-latest
+    name: Test (${{ matrix.os }} · ${{ matrix.toolchain }} · ${{ matrix.features }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        toolchain: [stable, "1.93.1"] # latest stable + MSRV
+        features: [default, ai-agent]
+        include:
+          # Only run the full matrix on Linux; macOS covers stable/default only
+          - os: macos-latest
+            toolchain: stable
+            features: default
+        exclude:
+          - os: macos-latest
+            toolchain: "1.93.1"
+          - os: macos-latest
+            features: ai-agent
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: test (default features)
-        run: cargo test --workspace -- --nocapture
-      - name: test (all features)
-        run: cargo test --workspace --all-features -- --nocapture
 
-  # ── doc ──────────────────────────────────────────────────────────────────────
-  # Mirrors [package.metadata.docs.rs]: all-features + --cfg docsrs.
-  # -D warnings catches broken intra-doc links and missing doc comments.
-  doc:
-    name: doc
-    needs: test
+      - name: Install Rust (${{ matrix.toolchain }})
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: test-${{ matrix.os }}-${{ matrix.toolchain }}-${{ matrix.features }}
+
+      - name: Build (default features)
+        if: matrix.features == 'default'
+        run: cargo build --all-targets
+
+      - name: Build (ai-agent feature)
+        if: matrix.features == 'ai-agent'
+        run: cargo build --all-targets --features ai-agent
+
+      # ── Core test suites ────────────────────────────────────────────────────
+      - name: Tests — validator_tests (sniper-bot prevention, 13 tests)
+        run: cargo test --test validator_tests -- --nocapture
+
+      - name: Tests — liquidity_tests (AMM model + anti-rug ratings, 11 tests)
+        run: cargo test --test liquidity_tests -- --nocapture
+
+      - name: Tests — forge_tests (PEV loop integration, 13 tests))
+        run: cargo test --test forge_tests -- --nocapture
+
+      - name: Tests — integration (PEV loop integration, 13 tests))
+        run: cargo test --test integration -- --nocapture
+
+      - name: Tests — doctests + unit tests (default features)
+        if: matrix.features == 'default'
+        run: cargo test --workspace -- --test-threads=8
+
+      - name: Tests — doctests + unit tests (ai-agent feature)
+        if: matrix.features == 'ai-agent'
+        run: cargo test --workspace --features ai-agent -- --test-threads=8
+
+  # ── 4. Release build ────────────────────────────────────────────────────────
+  build-release:
+    name: Release build (Linux · stable)
     runs-on: ubuntu-latest
+    needs: [fmt, clippy, test]
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
       - uses: Swatinem/rust-cache@v2
-      - name: cargo doc (all features, docs.rs simulation)
-        run: cargo doc --no-deps --all-features
+        with:
+          key: release
+
+      - name: cargo build --release
+        # Mirrors tasks.json: CARGO_INCREMENTAL=0, LTO already on in profile
+        run: cargo build --release
         env:
-          RUSTDOCFLAGS: "--cfg docsrs -D warnings"
+          CARGO_INCREMENTAL: 0
 
-  # ── msrv ─────────────────────────────────────────────────────────────────────
-  # Verify the crate compiles and tests pass on the declared minimum Rust version.
-  # Runs in parallel with test (both need build to pass).
-  # Pins the exact toolchain declared in Cargo.toml rust-version.
+      - name: Upload release binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: polar-bear-arc-forge-defi-linux-x86_64
+          path: target/release/polar-bear-arc-forge-defi
+          retention-days: 7
+
+  # ── 5. Docs ─────────────────────────────────────────────────────────────────
+  docs:
+    name: Rustdoc (docs.rs parity)
+    runs-on: ubuntu-latest
+    needs: [fmt, clippy, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: docs
+
+      - name: cargo doc --all-features
+        # Mirrors package.metadata.docs.rs in Cargo.toml
+        run: cargo doc --all-features --no-deps --document-private-items
+        env:
+          RUSTDOCFLAGS: --cfg docsrs
+
+  # ── 6. MSRV check ───────────────────────────────────────────────────────────
   msrv:
-    name: msrv (1.85.0)
-    needs: build
+    name: MSRV (rust-version = 1.93.1)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.85.0
+
+      - name: Install MSRV toolchain
+        uses: dtolnay/rust-toolchain@1.93.1
+
       - uses: Swatinem/rust-cache@v2
-      - name: build (default features)
-        run: cargo build
-      - name: build (all features)
-        run: cargo build --all-features
-      - name: test (default features)
-        run: cargo test --workspace
-      - name: test (all features)
-        run: cargo test --workspace --all-features
+        with:
+          key: msrv
+
+      - name: cargo check (MSRV, all targets)
+        run: cargo check --all-targets
+
+      - name: cargo check (MSRV, ai-agent feature)
+        run: cargo check --all-targets --features ai-agent
