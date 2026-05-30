@@ -31,16 +31,17 @@
 //! ```
 
 use anyhow::Result;
+#[allow(unused_imports)]
 use tracing::info;
 
 use crate::types::LaunchSimulation;
 
 // ── Model ─────────────────────────────────────────────────────────────────────
-
+#[allow(dead_code)]
 const AGENT_MODEL: &str = "claude-sonnet-4-6";
 
 // ── Preamble ──────────────────────────────────────────────────────────────────
-
+#[allow(dead_code)]
 const PREAMBLE: &str = "\
 You are an expert DeFi security analyst and Solana tokenomics specialist, \
 operating as an ARC Forge launch analysis agent at Polar Bear Systems.
@@ -138,6 +139,10 @@ impl ArcForgeAgent {
     }
 
     /// Always returns a placeholder message - no network call is made.
+    ///
+    /// `async` is kept so this stub is a drop-in for the real implementation
+    /// and call sites compile without `#[cfg]` guards.
+    #[allow(clippy::unused_async)]
     pub async fn analyse_simulation(&self, _simulation: &LaunchSimulation) -> Result<String> {
         Ok("[Agent feature not compiled. \
              Rebuild with `--features ai-agent` and set ANTHROPIC_API_KEY \

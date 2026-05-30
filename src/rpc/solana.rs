@@ -103,7 +103,7 @@ struct BalanceResult {
 /// Lightweight Solana JSON-RPC client.
 ///
 /// Wraps `reqwest::Client` and exposes the three methods needed by the
-/// ARC Forge pipeline: [`get_slot`], [`get_mint_info`], and [`get_balance`].
+/// ARC Forge pipeline: `get_slot`, `get_mint_info`, and `get_balance`.
 pub struct SolanaRpcClient {
     http: Client,
     rpc_url: String,
