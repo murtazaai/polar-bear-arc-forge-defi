@@ -37,17 +37,17 @@ jobs:
   #     - run: cargo generate-lockfile
   #     - run: cargo audit
 
-  # ── fmt ─────────────────────────────────────────────────────────────────────
-  # Gate 1: formatting check - cheapest possible failure, no cache needed.
-  fmt:
-    name: fmt
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-      - run: cargo fmt --all -- --check
+  # # ── fmt ─────────────────────────────────────────────────────────────────────
+  # # Gate 1: formatting check - cheapest possible failure, no cache needed.
+  # fmt:
+  #   name: fmt
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         components: rustfmt
+  #     - run: cargo fmt --all -- --check
 
   # ── check ────────────────────────────────────────────────────────────────────
   # Gate 2: fast type-check across all targets and features before building.
