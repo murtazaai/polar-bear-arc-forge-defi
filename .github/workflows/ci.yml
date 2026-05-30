@@ -26,6 +26,17 @@ env:
   RUST_LOG: info
 
 jobs:
+  # # ── audit ─────────────────────────────────────────────────────────────────────
+  # # cargo audit (supply-chain security - requires `cargo install cargo-audit`)
+  # audit:
+  #   name: audit
+  #   needs: [rust, cargo] # cache cargo-audit once installed
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - run: cargo install --force --locked cargo-audit
+  #     - run: cargo generate-lockfile
+  #     - run: cargo audit
+
   # ── fmt ─────────────────────────────────────────────────────────────────────
   # Gate 1: formatting check - cheapest possible failure, no cache needed.
   fmt:

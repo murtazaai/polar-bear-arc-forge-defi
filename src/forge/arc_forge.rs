@@ -67,7 +67,7 @@ impl ArcForgeLauncher {
             "ARC Forge - PERCEIVE (on-chain mint)"
         );
         let report = self.validator.validate(mint_address).await?;
-        Ok(self.build(config, report, "on-chain mint"))
+        Ok(ArcForgeLauncher::build(config, report, "on-chain mint"))
     }
 
     // ── Mode B: planned new token (no on-chain mint yet) ──────────────────────
@@ -85,7 +85,7 @@ impl ArcForgeLauncher {
         );
         let synthetic = synthetic_mint(&config);
         let report = self.validator.validate_mint_info(&synthetic);
-        self.build(config, report, "planned config")
+        ArcForgeLauncher::build(config, report, "planned config")
     }
 
     // ── Core builder ──────────────────────────────────────────────────────────

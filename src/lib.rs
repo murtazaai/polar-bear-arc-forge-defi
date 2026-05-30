@@ -1,6 +1,6 @@
 //! # polar-bear-arc-forge-defi
 //!
-//! ARC Forge DeFi platform - Solana token launch with sniper-bot prevention
+//! ARC Forge `DeFi` platform - Solana token launch with sniper-bot prevention
 //! and deep initial liquidity, powered by [Rig (ARC)](https://rig.rs) AI agents.
 //!
 //! ## Architecture

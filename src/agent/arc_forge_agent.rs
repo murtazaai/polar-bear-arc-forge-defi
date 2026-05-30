@@ -31,7 +31,6 @@
 //! ```
 
 use anyhow::Result;
-use rig_core::client::ProviderClient;
 use tracing::info;
 
 use crate::types::LaunchSimulation;
@@ -78,7 +77,7 @@ impl ArcForgeAgent {
     /// Calls `dotenvy::dotenv().ok()` so a `.env` file is automatically loaded
     /// in development without requiring the caller to do so.
     pub fn new() -> Result<Self> {
-        use rig_core::providers::anthropic;
+        use rig_core::{client::ProviderClient, providers::anthropic};
         let _ = dotenvy::dotenv();
         let client = anthropic::Client::from_env()?;
         Ok(Self { client })

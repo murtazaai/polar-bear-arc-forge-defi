@@ -58,8 +58,8 @@ impl DeepLiquidityProtocol {
 
         let depth_score = depth_score(lc.initial_liquidity_sol);
         let pool_value_usd = sol_value_usd * 2.0; // both sides of constant-product pool
-        let impact_1k = price_impact(1_000.0, pool_value_usd);
-        let impact_10k = price_impact(10_000.0, pool_value_usd);
+        let small_buy_impact = price_impact(1_000.0, pool_value_usd);
+        let large_buy_impact = price_impact(10_000.0, pool_value_usd);
         let anti_rug_rating = anti_rug_rating(lc, depth_score);
 
         LiquidityMetrics {
@@ -68,8 +68,8 @@ impl DeepLiquidityProtocol {
             estimated_initial_price_usd: initial_price_usd,
             estimated_market_cap_usd: market_cap_usd,
             liquidity_depth_score: depth_score,
-            price_impact_1k_usd_buy_pct: impact_1k,
-            price_impact_10k_usd_buy_pct: impact_10k,
+            price_small_buy_impact_usd_buy_pct: small_buy_impact,
+            price_large_buy_impact_usd_buy_pct: large_buy_impact,
             anti_rug_rating,
         }
     }
@@ -78,7 +78,9 @@ impl DeepLiquidityProtocol {
 // ── Core calculations ─────────────────────────────────────────────────────────
 
 fn tokens_for_pool(total_supply: u64, allocation_pct: f64) -> u64 {
-    (total_supply as f64 * (allocation_pct / 100.0)) as u64
+    (total_supply as f64 * (allocation_pct / 100.0))
+        .max(0.0)
+        .round() as u64
 }
 
 fn adjust(raw: u64, decimals: u8) -> f64 {
@@ -166,8 +168,8 @@ Liquidity Summary
             } else {
                 format!("{} days", self.config.lock_duration_days)
             },
-            self.price_impact_1k_usd_buy_pct,
-            self.price_impact_10k_usd_buy_pct,
+            self.price_small_buy_impact_usd_buy_pct,
+            self.price_large_buy_impact_usd_buy_pct,
             self.liquidity_depth_score,
             self.anti_rug_rating,
         )
@@ -178,9 +180,10 @@ Liquidity Summary
 
 #[cfg(test)]
 mod tests {
+    use pretty_assertions::assert_eq;
+
     use super::*;
     use crate::types::{LaunchConfig, LiquidityConfig, SolanaNetwork};
-    use pretty_assertions::assert_eq;
 
     fn cfg(sol: f64, burn: bool) -> LaunchConfig {
         LaunchConfig {
@@ -213,13 +216,15 @@ mod tests {
     fn deeper_pool_lowers_impact() {
         let shallow = DeepLiquidityProtocol::compute(&cfg(1.0, true));
         let deep = DeepLiquidityProtocol::compute(&cfg(100.0, true));
-        assert!(shallow.price_impact_1k_usd_buy_pct > deep.price_impact_1k_usd_buy_pct);
+        assert!(
+            shallow.price_small_buy_impact_usd_buy_pct > deep.price_small_buy_impact_usd_buy_pct
+        );
     }
 
     #[test]
     fn ten_k_impact_greater_than_one_k() {
         let m = DeepLiquidityProtocol::compute(&cfg(10.0, true));
-        assert!(m.price_impact_10k_usd_buy_pct > m.price_impact_1k_usd_buy_pct);
+        assert!(m.price_large_buy_impact_usd_buy_pct > m.price_small_buy_impact_usd_buy_pct);
     }
 
     #[test]
