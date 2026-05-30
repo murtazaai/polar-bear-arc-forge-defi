@@ -1,9 +1,16 @@
 # .github/workflows/ci.yml  ·  polar-bear-arc-forge-defi
 #
-# Pipeline: fmt → clippy → build → test → doc → msrv
+# Pipeline (in dependency order):
 #
-# All jobs run without ANTHROPIC_API_KEY - live provider tests are
-# gated behind #[ignore] and never run in CI.
+#   fmt ──► check ──► clippy ──► build ──► test ──► doc
+#                                             │
+#                                           msrv
+#
+# Fast-fail: fmt and check run first with no cache cost.
+# All subsequent jobs only start after their gate passes.
+#
+# No ANTHROPIC_API_KEY is set in CI. Live provider tests are gated
+# behind #[ignore] and are never run here.
 
 name: CI
 
@@ -16,9 +23,11 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  RUST_LOG: info
 
 jobs:
-  # ── fmt ────────────────────────────────────────────────────────────────────
+  # ── fmt ─────────────────────────────────────────────────────────────────────
+  # Gate 1: formatting check - cheapest possible failure, no cache needed.
   fmt:
     name: fmt
     runs-on: ubuntu-latest
@@ -29,9 +38,24 @@ jobs:
           components: rustfmt
       - run: cargo fmt --all -- --check
 
-  # ── clippy ─────────────────────────────────────────────────────────────────
+  # ── check ────────────────────────────────────────────────────────────────────
+  # Gate 2: fast type-check across all targets and features before building.
+  check:
+    name: check
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --all-targets
+      - run: cargo check --all-targets --all-features
+
+  # ── clippy ───────────────────────────────────────────────────────────────────
+  # Gate 3: lint with -D warnings - matches .zed/settings.json and .clippy.toml.
   clippy:
     name: clippy
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,9 +66,11 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo clippy --all-targets --all-features -- -D warnings
 
-  # ── build ──────────────────────────────────────────────────────────────────
+  # ── build ────────────────────────────────────────────────────────────────────
+  # Release build for both default and ai-agent feature variants.
   build:
     name: build
+    needs: clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,38 +79,55 @@ jobs:
       - run: cargo build --release
       - run: cargo build --release --all-features
 
-  # ── test ───────────────────────────────────────────────────────────────────
+  # ── test ─────────────────────────────────────────────────────────────────────
+  # All deterministic tests. Live provider tests (#[ignore]) are never run here.
+  # --nocapture surfaces tracing output for failing tests in the CI log.
   test:
     name: test
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      # Run all deterministic tests - no API key required.
-      # Live provider tests are all #[ignore] and are skipped here.
-      - run: cargo test --workspace
-      - run: cargo test --workspace --all-features
+      - name: test (default features)
+        run: cargo test --workspace -- --nocapture
+      - name: test (all features)
+        run: cargo test --workspace --all-features -- --nocapture
 
-  # ── doc ────────────────────────────────────────────────────────────────────
+  # ── doc ──────────────────────────────────────────────────────────────────────
+  # Mirrors [package.metadata.docs.rs]: all-features + --cfg docsrs.
+  # -D warnings catches broken intra-doc links and missing doc comments.
   doc:
     name: doc
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo doc --no-deps --all-features
+      - name: cargo doc (all features, docs.rs simulation)
+        run: cargo doc --no-deps --all-features
         env:
           RUSTDOCFLAGS: "--cfg docsrs -D warnings"
 
-  # ── msrv ───────────────────────────────────────────────────────────────────
+  # ── msrv ─────────────────────────────────────────────────────────────────────
+  # Verify the crate compiles and tests pass on the declared minimum Rust version.
+  # Runs in parallel with test (both need build to pass).
+  # Pins the exact toolchain declared in Cargo.toml rust-version.
   msrv:
     name: msrv (1.85.0)
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.85.0
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build
-      - run: cargo test --workspace
+      - name: build (default features)
+        run: cargo build
+      - name: build (all features)
+        run: cargo build --all-features
+      - name: test (default features)
+        run: cargo test --workspace
+      - name: test (all features)
+        run: cargo test --workspace --all-features
