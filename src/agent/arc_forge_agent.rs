@@ -31,6 +31,7 @@
 //! ```
 
 use anyhow::Result;
+use rig_core::client::ProviderClient;
 use tracing::info;
 
 use crate::types::LaunchSimulation;
@@ -79,16 +80,7 @@ impl ArcForgeAgent {
     pub fn new() -> Result<Self> {
         use rig_core::providers::anthropic;
         let _ = dotenvy::dotenv();
-        let client = anthropic::Client::new(
-            &std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY not set"),
-        )
-        .unwrap(); // unwrap is not safe here; the client must be initialised successfully
-        // Reliability must be handled with fault tolerance
-        // Any failure to initialise the client should be treated as unrecoverable
-        // Ok and Err should be treated as unrecoverable
-        // Result<Self, std::error::Error>
-        // or
-        // Result<Self, anyhow::Error>
+        let client = anthropic::Client::from_env()?;
         Ok(Self { client })
     }
 
@@ -99,7 +91,8 @@ impl ArcForgeAgent {
     /// as a plain string (≤ 300 words per the preamble).
     pub async fn analyse_simulation(&self, simulation: &LaunchSimulation) -> Result<String> {
         use rig_core::{
-            client::{CompletionClient, ProviderClient},
+            client::CompletionClient,
+            // client::ProviderClient,
             completion::Prompt,
         };
 

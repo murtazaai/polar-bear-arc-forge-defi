@@ -1,4 +1,4 @@
-//! # DeFi integrations
+//! # `DeFi` integrations
 //!
 //! - [`raydium`] - Raydium v3 REST API client (pool TVL, volume, APY)
 //! - [`liquidity`] - Deep initial liquidity protocol (constant-product AMM model)

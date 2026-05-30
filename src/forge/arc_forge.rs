@@ -1,4 +1,4 @@
-//! # ArcForgeLauncher
+//! # `ArcForgeLauncher`
 //!
 //! Orchestrates the full Perceive → Evaluate → Validate (PEV) loop for
 //! an ARC Forge token launch simulation.
@@ -91,7 +91,6 @@ impl ArcForgeLauncher {
     // ── Core builder ──────────────────────────────────────────────────────────
 
     fn build(
-        &self,
         config: LaunchConfig,
         report: ValidationReport,
         perceive_source: &str,
