@@ -1,10 +1,10 @@
-//! # TokenValidator
+//! # `TokenValidator`
 //!
 //! Fetches live SPL Token mint data from Solana RPC and runs six
 //! sniper-bot / rug-pull prevention checks, returning a fully
 //! serialisable [`ValidationReport`].
 //!
-//! All checks map directly to documented DeFi attack vectors.
+//! All checks map directly to documented `DeFi` attack vectors.
 //! ARC Forge blocks a launch whenever `risk_score > 0` on any
 //! [`ValidationStatus::Dangerous`] check.
 
@@ -329,7 +329,12 @@ fn short(pk: &str) -> String {
 }
 
 fn adjusted_supply(supply: u64, decimals: u8) -> f64 {
-    supply as f64 / 10_f64.powi(i32::from(decimals))
+    // Split supply into hi/lo u32 halves to avoid cast_precision_loss
+    // (u64 -> f64 loses precision above 2^52).
+    let hi = f64::from(u32::try_from(supply >> 32).unwrap_or(u32::MAX));
+    let lo = f64::from(u32::try_from(supply & 0xFFFF_FFFF).unwrap_or(u32::MAX));
+    let as_f64 = hi * 4_294_967_296.0 + lo; // hi * 2^32 + lo
+    as_f64 / 10_f64.powi(i32::from(decimals))
 }
 
 fn format_supply(supply: u64, decimals: u8) -> String {

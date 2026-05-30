@@ -78,13 +78,28 @@ impl DeepLiquidityProtocol {
 // ── Core calculations ─────────────────────────────────────────────────────────
 
 fn tokens_for_pool(total_supply: u64, allocation_pct: f64) -> u64 {
-    (total_supply as f64 * (allocation_pct / 100.0))
-        .max(0.0)
-        .round() as u64
+    // Convert `allocation_pct` to fixed-point millionths (6 d.p.) then
+    // multiply in u128 to avoid any f64 precision or sign issues on the
+    // large `total_supply` value.
+    //
+    // `clamp(0.0, 100.0)` bounds the product to [0, 100_000_000], which
+    // always fits in u32 (max 4_294_967_295).  The explicit `.min` + the
+    // `#[allow]` below document that the truncation is intentional and safe.
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    let pct_millionths = (allocation_pct.clamp(0.0, 100.0) * 1_000_000.0)
+        .round()
+        .min(100_000_000.0) as u32; // bounded: max 100_000_000 < u32::MAX
+    let numerator = u128::from(total_supply) * u128::from(pct_millionths);
+    u64::try_from(numerator / 100_000_000_u128).unwrap_or(u64::MAX)
 }
 
 fn adjust(raw: u64, decimals: u8) -> f64 {
-    raw as f64 / 10_f64.powi(i32::from(decimals))
+    // Split raw into high and low 32-bit halves to avoid cast_precision_loss
+    // (u64 -> f64 loses precision above 2^52).
+    let hi = f64::from(u32::try_from(raw >> 32).unwrap_or(u32::MAX));
+    let lo = f64::from(u32::try_from(raw & 0xFFFF_FFFF).unwrap_or(u32::MAX));
+    let as_f64 = hi * 4_294_967_296.0 + lo; // hi * 2^32 + lo
+    as_f64 / 10_f64.powi(i32::from(decimals))
 }
 
 /// Liquidity depth score (0–100) based on SOL locked in the initial LP position.
@@ -265,7 +280,7 @@ mod tests {
     #[test]
     fn tokens_in_pool_matches_allocation() {
         let m = DeepLiquidityProtocol::compute(&cfg(10.0, true));
-        let expected = (1_000_000_000_000_000_f64 * 0.10) as u64;
+        let expected = 100_000_000_000_000_u64;
         assert_eq!(m.tokens_in_pool, expected);
     }
 }

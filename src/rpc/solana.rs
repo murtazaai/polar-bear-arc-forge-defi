@@ -8,8 +8,8 @@
 //!
 //! - No `solana-sdk` dependency - avoids version conflicts with `rig-core`.
 //! - All RPC calls are logged at `DEBUG` level for full transparency.
-//! - The SPL Token mint account (82 bytes) is decoded from base64 manually
-//!   using published byte-offset constants from the SPL source.
+//! - The SPL Token mint account (82 bytes) is decoded from base64 manually using published
+//!   byte-offset constants from the SPL source.
 //!
 //! ## SPL Token Mint layout (82 bytes)
 //!
@@ -26,12 +26,13 @@
 //! Reference:
 //! <https://github.com/solana-labs/solana-program-library/blob/master/token/program/src/state.rs>
 
+use std::sync::atomic::{AtomicU64, Ordering};
+
 use anyhow::{Context, Result, anyhow};
 use base64::{Engine, engine::general_purpose::STANDARD as B64};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::sync::atomic::{AtomicU64, Ordering};
 use tracing::{debug, warn};
 
 use crate::types::MintInfo;
@@ -111,6 +112,13 @@ pub struct SolanaRpcClient {
 
 impl SolanaRpcClient {
     /// Create a new client pointed at `rpc_url`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the underlying `reqwest` client cannot be constructed.  In
+    /// practice this is infallible for the configuration used here (no TLS
+    /// customisation, no invalid header values), so the panic should never
+    /// trigger at runtime.
     pub fn new(rpc_url: impl Into<String>) -> Self {
         Self {
             http: Client::builder()

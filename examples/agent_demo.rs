@@ -2,7 +2,7 @@
 //!
 //! Demonstrates the `ArcForgeAgent` - a rig-core 0.37 agent wrapping
 //! `claude-sonnet-4-6` that analyses launch simulations and returns a
-//! structured DeFi security assessment.
+//! structured `DeFi` security assessment.
 //!
 //! ## Requirements
 //!
@@ -77,10 +77,8 @@ async fn main() -> anyhow::Result<()> {
             network: SolanaNetwork::Devnet,
         };
 
-        println!(
-            "── Scenario: {} ({}) ─────────────────────────────────────────────",
-            name, symbol
-        );
+        println!("── Scenario: {name} ({symbol}) ─────────────────────────────────────────────");
+
         let sim = launcher.simulate_planned_launch(config);
         println!(
             "   Readiness: {}/100  Sniper prevention: {}",

@@ -1,13 +1,13 @@
 //! tests/integration.rs
 //! ─────────────────────────────────────────────────────────────────────────────
-//! Integration tests for the ARC Forge DeFi platform.
+//! Integration tests for the ARC Forge `DeFi` platform.
 //!
 //! These tests run without any network calls (no Solana RPC, no Raydium API).
 //! They validate the core business logic: PEV loop simulation, sniper-bot
 //! prevention scoring, liquidity metrics, and JSON serialisation.
 //!
 //! Run with:   cargo test
-//! Run single: cargo test test_full_launch_simulation -- --nocapture
+//! Run single: cargo test `test_full_launch_simulation` -- --nocapture
 //! ─────────────────────────────────────────────────────────────────────────────
 
 use polar_bear_arc_forge_defi::{
@@ -198,10 +198,10 @@ fn test_price_impact_ordering() {
 
     // A $10K buy must have higher price impact than a $1K buy
     assert!(
-        m.price_impact_10k_usd_buy_pct > m.price_impact_1k_usd_buy_pct,
+        m.price_large_buy_impact_usd_buy_pct > m.price_small_buy_impact_usd_buy_pct,
         "10K impact ({}) should exceed 1K impact ({})",
-        m.price_impact_10k_usd_buy_pct,
-        m.price_impact_1k_usd_buy_pct
+        m.price_large_buy_impact_usd_buy_pct,
+        m.price_small_buy_impact_usd_buy_pct
     );
 }
 

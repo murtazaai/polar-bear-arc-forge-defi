@@ -55,7 +55,7 @@ fn mcap_equals_price_times_total_supply() {
 #[test]
 fn tokens_in_pool_is_10_percent_of_supply() {
     let m = DeepLiquidityProtocol::compute(&cfg(10.0, true, 0));
-    let expected = (1_000_000_000_000_000_f64 * 0.10) as u64;
+    let expected = 100_000_000_000_000_u64;
     assert_eq!(m.tokens_in_pool, expected);
 }
 
@@ -66,17 +66,17 @@ fn deeper_liquidity_lowers_price_impact() {
     let shallow = DeepLiquidityProtocol::compute(&cfg(1.0, true, 0));
     let deep = DeepLiquidityProtocol::compute(&cfg(100.0, true, 0));
     assert!(
-        shallow.price_impact_1k_usd_buy_pct > deep.price_impact_1k_usd_buy_pct,
+        shallow.price_small_buy_impact_usd_buy_pct > deep.price_small_buy_impact_usd_buy_pct,
         "shallow: {:.4}  deep: {:.4}",
-        shallow.price_impact_1k_usd_buy_pct,
-        deep.price_impact_1k_usd_buy_pct
+        shallow.price_small_buy_impact_usd_buy_pct,
+        deep.price_small_buy_impact_usd_buy_pct
     );
 }
 
 #[test]
 fn ten_k_impact_exceeds_one_k_impact() {
     let m = DeepLiquidityProtocol::compute(&cfg(10.0, true, 0));
-    assert!(m.price_impact_10k_usd_buy_pct > m.price_impact_1k_usd_buy_pct);
+    assert!(m.price_large_buy_impact_usd_buy_pct > m.price_small_buy_impact_usd_buy_pct);
 }
 
 // ── Anti-rug ratings ──────────────────────────────────────────────────────────

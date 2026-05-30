@@ -14,8 +14,6 @@
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use tracing_subscriber::{EnvFilter, FmtSubscriber};
-
 use polar_bear_arc_forge_defi::{
     agent::ArcForgeAgent,
     defi::RaydiumClient,
@@ -24,6 +22,7 @@ use polar_bear_arc_forge_defi::{
     types::{LaunchConfig, LiquidityConfig, SolanaNetwork, ValidationStatus},
     validator::TokenValidator,
 };
+use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 // ── CLI ───────────────────────────────────────────────────────────────────────
 
@@ -37,7 +36,7 @@ use polar_bear_arc_forge_defi::{
     long_about = None,
 )]
 struct Cli {
-    /// Solana RPC endpoint (overrides SOLANA_RPC_URL env var).
+    /// Solana RPC endpoint (overrides `SOLANA_RPC_URL` env var).
     #[arg(
         long,
         env = "SOLANA_RPC_URL",
@@ -122,7 +121,7 @@ enum Commands {
 
     /// Launch simulation + Rig (ARC) AI agent analysis.
     ///
-    /// Requires --features ai-agent and ANTHROPIC_API_KEY.
+    /// Requires --features ai-agent and `ANTHROPIC_API_KEY`.
     Agent {
         /// Total token supply.
         #[arg(long, default_value = "1000000000000000")]

@@ -111,6 +111,13 @@ impl Default for RaydiumClient {
 
 impl RaydiumClient {
     /// Create a new client with a 20-second request timeout.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the underlying `reqwest` client cannot be constructed.  In
+    /// practice this is infallible for the configuration used here (no TLS
+    /// customisation, no invalid header values), so the panic should never
+    /// trigger at runtime.
     pub fn new() -> Self {
         Self {
             http: Client::builder()

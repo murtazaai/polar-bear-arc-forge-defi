@@ -149,7 +149,7 @@ fn readiness_score(report: &ValidationReport, metrics: &LiquidityMetrics) -> u8 
         score -= 20;
     }
 
-    score.clamp(0, 100) as u8
+    u8::try_from(score.clamp(0, 100)).unwrap_or(100)
 }
 
 // ── PEV narrative ─────────────────────────────────────────────────────────────
