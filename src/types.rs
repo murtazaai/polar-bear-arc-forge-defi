@@ -4,9 +4,10 @@
 //! and `agent` modules.  Every type is `Serialize + Deserialize` so the full
 //! [`LaunchSimulation`] report can be emitted as a JSON audit record.
 
+use std::fmt;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
 // ── Solana mint ───────────────────────────────────────────────────────────────
 
@@ -162,9 +163,9 @@ pub struct LiquidityMetrics {
     /// Liquidity depth score 0–100; higher = harder to manipulate.
     pub liquidity_depth_score: u8,
     /// Constant-product price impact for a $1 000 buy order (percent).
-    pub price_impact_1k_usd_buy_pct: f64,
+    pub price_small_buy_impact_usd_buy_pct: f64,
     /// Constant-product price impact for a $10 000 buy order (percent).
-    pub price_impact_10k_usd_buy_pct: f64,
+    pub price_large_buy_impact_usd_buy_pct: f64,
     /// Human-readable anti-rug rating (⭐ RISKY → ⭐⭐⭐⭐⭐ DIAMOND).
     pub anti_rug_rating: String,
 }

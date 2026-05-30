@@ -197,7 +197,7 @@ fn pev_summary(
         metrics.liquidity_depth_score,
         metrics.estimated_initial_price_usd,
         metrics.estimated_market_cap_usd,
-        metrics.price_impact_1k_usd_buy_pct,
+        metrics.price_small_buy_impact_usd_buy_pct,
     );
 
     let validate = if readiness >= 80 {
