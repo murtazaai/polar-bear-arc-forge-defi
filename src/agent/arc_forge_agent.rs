@@ -1,6 +1,6 @@
 //! # ARC Forge AI Agent
 //!
-//! A `rig-core` agent that analyses [`LaunchSimulation`] reports and returns
+//! A `rig-core` agent that analyses `LaunchSimulation` reports and returns
 //! a structured natural-language risk assessment via Claude.
 //!
 //! ## Required traits (rig-core ≥ 0.36)
@@ -87,7 +87,7 @@ Be direct, technical, and concise.  Keep your entire response under 300 words.";
 
 // ── ArcForgeAgent ─────────────────────────────────────────────────────────────
 
-/// Rig (ARC) AI agent that analyses [`LaunchSimulation`] reports via Claude.
+/// Rig (ARC) AI agent that analyses `LaunchSimulation` reports via Claude.
 ///
 /// Requires the `ai-agent` feature and `ANTHROPIC_API_KEY` set in the
 /// environment (or loaded from `.env` via `dotenvy`).
@@ -122,7 +122,7 @@ impl ArcForgeAgent {
         Ok(Self { client })
     }
 
-    /// Analyse a [`LaunchSimulation`] and return a natural-language assessment.
+    /// Analyse a `LaunchSimulation` and return a natural-language assessment.
     ///
     /// The full simulation is serialised to JSON and sent as context to
     /// `claude-sonnet-4-6` via `rig-core`.  The agent returns its assessment

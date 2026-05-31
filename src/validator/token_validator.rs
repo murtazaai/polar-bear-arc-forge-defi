@@ -2,11 +2,11 @@
 //!
 //! Fetches live SPL Token mint data from Solana RPC and runs six
 //! sniper-bot / rug-pull prevention checks, returning a fully
-//! serialisable [`ValidationReport`].
+//! serialisable `ValidationReport`.
 //!
 //! All checks map directly to documented `DeFi` attack vectors.
 //! ARC Forge blocks a launch whenever `risk_score > 0` on any
-//! [`ValidationStatus::Dangerous`] check.
+//! `ValidationStatus::Dangerous` check.
 
 /// Validates an SPL Token mint against all sniper-bot prevention checks.
 ///
@@ -63,7 +63,7 @@ impl TokenValidator {
     ///
     /// # Returns
     ///
-    /// A [`ValidationReport`] containing the results of the validation checks.
+    /// A `ValidationReport` containing the results of the validation checks.
     pub async fn validate(&self, mint_address: &str) -> Result<ValidationReport> {
         info!(mint = mint_address, "Fetching mint info from Solana RPC");
         let mint = self.rpc.get_mint_info(mint_address).await?;
@@ -88,7 +88,7 @@ impl TokenValidator {
     ///
     /// # Returns
     ///
-    /// A [`ValidationReport`] containing the results of the validation checks.
+    /// A `ValidationReport` containing the results of the validation checks.
     pub fn validate_mint_info(&self, mint: &MintInfo) -> ValidationReport {
         let checks = run_all_checks(mint);
         let risk_score = score(&checks);

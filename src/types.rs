@@ -2,7 +2,7 @@
 //!
 //! All data structures shared across the `rpc`, `validator`, `defi`, `forge`,
 //! and `agent` modules.  Every type is `Serialize + Deserialize` so the full
-//! [`LaunchSimulation`] report can be emitted as a JSON audit record.
+//! `LaunchSimulation` report can be emitted as a JSON audit record.
 
 /// Represents a launch configuration for a token on the Solana blockchain.
 ///

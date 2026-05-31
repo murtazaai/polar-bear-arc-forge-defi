@@ -22,7 +22,7 @@
 //! submitted.  Every call that would normally submit a Solana instruction
 //! produces a structured log entry instead.
 
-/// Orchestrates the ARC Forge PEV loop and produces a [`LaunchSimulation`].
+/// Orchestrates the ARC Forge PEV loop and produces a `LaunchSimulation`.
 ///
 /// The [`ArcForgeLauncher`] is responsible for coordinating the PEV loop,
 /// including perceiving, evaluating, and validating the launch simulation.
@@ -39,7 +39,7 @@ use crate::{
     validator::TokenValidator,
 };
 
-/// Orchestrates the ARC Forge PEV loop and produces a [`LaunchSimulation`].
+/// Orchestrates the ARC Forge PEV loop and produces a `LaunchSimulation`.
 pub struct ArcForgeLauncher {
     validator: TokenValidator,
 }
@@ -79,7 +79,7 @@ impl ArcForgeLauncher {
     ///
     /// # Returns
     ///
-    /// A [`LaunchSimulation`] result containing the simulation results.
+    /// A `LaunchSimulation` result containing the simulation results.
     pub async fn simulate_existing_mint(
         &self,
         mint_address: &str,
@@ -106,7 +106,7 @@ impl ArcForgeLauncher {
     ///
     /// # Returns
     ///
-    /// A [`LaunchSimulation`] result containing the simulation results.
+    /// A `LaunchSimulation` result containing the simulation results.
     pub fn simulate_planned_launch(&self, config: LaunchConfig) -> LaunchSimulation {
         info!(
             token = %config.token_symbol,
@@ -118,7 +118,7 @@ impl ArcForgeLauncher {
         ArcForgeLauncher::build(config, report, "planned config")
     }
 
-    /// Builds a [`LaunchSimulation`] from the given configuration and report.
+    /// Builds a `LaunchSimulation` from the given configuration and report.
     ///
     /// # Arguments
     ///
@@ -129,7 +129,7 @@ impl ArcForgeLauncher {
     ///
     /// # Returns
     ///
-    /// A [`LaunchSimulation`] result containing the simulation results.
+    /// A `LaunchSimulation` result containing the simulation results.
     fn build(
         config: LaunchConfig,
         report: ValidationReport,
@@ -319,7 +319,7 @@ fn synthetic_mint(config: &LaunchConfig) -> MintInfo {
 ///
 /// # Arguments
 ///
-/// * `self` - The [`LaunchSimulation`] instance to print the report for.
+/// * `self` - The `LaunchSimulation` instance to print the report for.
 ///
 /// # Returns
 ///
