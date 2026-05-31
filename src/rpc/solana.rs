@@ -27,14 +27,6 @@
 //! <https://github.com/solana-labs/solana-program-library/blob/master/token/program/src/state.rs>
 
 /// Represents a Solana RPC client that can make JSON-RPC 2.0 requests to a Solana node.
-///
-/// # Examples
-///
-/// ```rust,no_run
-/// use solana_rpc::SolanaRpcClient;
-///
-/// let client = SolanaRpcClient::new("https://api.mainnet-beta.solana.com");
-/// ```
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use anyhow::{Context, Result, anyhow};
@@ -69,17 +61,6 @@ const SPL_TOKEN_2022: &str = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
 
 /// Represents a JSON-RPC request to the Solana RPC API.
 ///
-/// # Examples
-///
-/// ```
-/// let request = RpcRequest {
-///     jsonrpc: "2.0",
-///     id: 1,
-///     method: "getAccountInfo",
-///     params: json!({"address": "..."})
-/// };
-/// ```
-///
 /// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
 #[derive(Serialize)]
 struct RpcRequest<'a> {
@@ -90,12 +71,6 @@ struct RpcRequest<'a> {
 }
 
 /// Represents a JSON-RPC response from the Solana RPC API.
-///
-/// # Examples
-///
-/// ```
-/// let response: RpcResponse<AccountInfoResult> = serde_json::from_str(r#"{"jsonrpc":"2.0","id":1,"result":{"value":{"data":["..."],"lamports":1,"owner":"..."}},"error":null}"#).unwrap();
-/// ```
 ///
 /// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
 #[derive(Deserialize)]
@@ -110,12 +85,6 @@ struct RpcResponse<T> {
 
 /// Represents an error from the Solana RPC API.
 ///
-/// # Examples
-///
-/// ```
-/// let error: RpcError = serde_json::from_str(r#"{"code":-32000,"message":"..."}"#).unwrap();
-/// ```
-///
 /// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
 #[derive(Deserialize)]
 struct RpcError {
@@ -125,12 +94,6 @@ struct RpcError {
 
 /// Represents the result of an account info request from the Solana RPC API.
 ///
-/// # Examples
-///
-/// ```
-/// let result: AccountInfoResult = serde_json::from_str(r#"{"result":{"value":{"data":["..."],"lamports":1,"owner":"..."}},"error":null}"#).unwrap();
-/// ```
-///
 /// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
 #[derive(Deserialize)]
 struct AccountInfoResult {
@@ -138,12 +101,6 @@ struct AccountInfoResult {
 }
 
 /// Represents the value of an account from the Solana RPC API.
-///
-/// # Examples
-///
-/// ```
-/// let value: AccountValue = serde_json::from_str(r#"{"data":["..."],"lamports":1,"owner":"...","executable":false}"#).unwrap();
-/// ```
 ///
 /// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
 #[derive(Deserialize)]
@@ -157,12 +114,6 @@ struct AccountValue {
 }
 
 /// Represents the result of a balance request from the Solana RPC API.
-///
-/// # Examples
-///
-/// ```
-/// let result: BalanceResult = serde_json::from_str(r#"{"result":1,"error":null}"#).unwrap();
-/// ```
 ///
 /// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
 #[derive(Deserialize)]
@@ -181,12 +132,6 @@ pub struct SolanaRpcClient {
 }
 
 /// Represents the result of a slot request from the Solana RPC API.
-///
-/// # Examples
-///
-/// ```
-/// let result: SlotResult = serde_json::from_str(r#"{"result":1,"error":null}"#).unwrap();
-/// ```
 ///
 /// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
 impl SolanaRpcClient {
@@ -211,12 +156,6 @@ impl SolanaRpcClient {
 
     /// Return the current confirmed slot - useful as a connectivity check.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// let slot: u64 = solana_rpc_client.get_slot().await.unwrap();
-    /// ```
-    ///
     /// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
     pub async fn get_slot(&self) -> Result<u64> {
         self.call::<u64>("getSlot", json!([])).await
@@ -226,12 +165,6 @@ impl SolanaRpcClient {
     ///
     /// Returns `Err` if the account does not exist, is not owned by the
     /// SPL Token program, or the account data cannot be decoded.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let mint_info: MintInfo = solana_rpc_client.get_mint_info("...").await.unwrap();
-    /// ```
     ///
     /// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
     pub async fn get_mint_info(&self, mint_address: &str) -> Result<MintInfo> {
@@ -271,12 +204,6 @@ impl SolanaRpcClient {
 
     /// Return the confirmed SOL balance of `address` in lamports.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// let balance: u64 = solana_rpc_client.get_balance("...").await.unwrap();
-    /// ```
-    ///
     /// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
     pub async fn get_balance(&self, address: &str) -> Result<u64> {
         let params = json!([address, { "commitment": "confirmed" }]);
@@ -285,12 +212,6 @@ impl SolanaRpcClient {
     }
 
     /// Internal helper for making RPC calls.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let result: RpcResponse = solana_rpc_client.call("...", json!({})).await.unwrap();
-    /// ```
     ///
     /// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
     async fn call<T: for<'de> Deserialize<'de>>(&self, method: &str, params: Value) -> Result<T> {
@@ -326,12 +247,6 @@ impl SolanaRpcClient {
 }
 
 /// Decode a raw ≥ 82-byte SPL Token mint account into a [`MintInfo`].
-///
-/// # Examples
-///
-/// ```
-/// let mint_info: MintInfo = solana_rpc_client.get_mint_info("...").await.unwrap();
-/// ```
 ///
 /// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
 fn decode_mint(data: &[u8], address: &str) -> Result<MintInfo> {

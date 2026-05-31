@@ -117,24 +117,6 @@ struct RawPool {
 ///
 /// This struct is used internally by the Raydium API client.
 ///
-/// This struct is generic over the type of the `data` field.
-///
-/// # Examples
-///
-/// ```
-/// use serde_json::json;
-/// use defi::raydium::RawMintMeta;
-///
-/// let data = json!({
-///     "address": "0x...",
-///     "symbol": "SOL",
-/// });
-///
-/// let mint_meta: RawMintMeta = serde_json::from_value(data).unwrap();
-/// ```
-///
-/// This struct is generic over the type of the `data` field.
-///
 /// # Fields
 ///
 /// - `address`: The mint address of the token.
@@ -194,12 +176,6 @@ pub struct PoolHealthSummary {
 /// # Fields
 ///
 /// - `http`: The underlying HTTP client used for making requests.
-///
-/// # Examples
-///
-/// ```
-/// let client = RaydiumClient::new();
-/// ```
 pub struct RaydiumClient {
     http: Client,
 }
@@ -212,12 +188,6 @@ pub struct RaydiumClient {
 /// practice this is infallible for the configuration used here (no TLS
 /// customisation, no invalid header values), so the panic should never
 /// trigger at runtime.
-///
-/// # Examples
-///
-/// ```
-/// let client = RaydiumClient::new();
-/// ```
 impl Default for RaydiumClient {
     fn default() -> Self {
         Self::new()
@@ -225,12 +195,6 @@ impl Default for RaydiumClient {
 }
 
 /// A client for interacting with the Raydium API.
-///
-/// # Examples
-///
-/// ```
-/// let client = RaydiumClient::new();
-/// ```
 impl RaydiumClient {
     /// Create a new client with a 20-second request timeout.
     ///
@@ -244,12 +208,6 @@ impl RaydiumClient {
     /// # Panics
     ///
     /// Panics if the underlying `reqwest` client cannot be constructed.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let client = RaydiumClient::new();
-    /// ```
     pub fn new() -> Self {
         Self {
             http: Client::builder()
@@ -268,12 +226,6 @@ impl RaydiumClient {
     ///
     /// Returns a `Result` containing a vector of `RaydiumPool` objects on success,
     /// or an error if the request fails.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let pools = client.get_pools_for_mint("SOL", "standard", 10).await.unwrap();
-    /// ```
     ///
     /// # Panics
     ///
@@ -346,12 +298,6 @@ impl RaydiumClient {
     ///
     /// Returns a `PoolHealthSummary` containing the aggregated health of all pools
     /// for the given mint, or an error if the request fails.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let summary = client.pool_health_summary("SOL").await;
-    /// ```
     pub async fn pool_health_summary(&self, token_mint: &str) -> PoolHealthSummary {
         match self.get_pools_for_mint(token_mint, "all", 10).await {
             Ok(pools) if !pools.is_empty() => {

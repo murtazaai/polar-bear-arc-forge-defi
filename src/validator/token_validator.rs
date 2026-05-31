@@ -36,14 +36,6 @@ pub struct TokenValidator {
 /// This is the main struct used to validate token accounts.
 ///
 /// It wraps a [`SolanaRpcClient`] and provides methods to validate token mints.
-///
-/// # Examples
-///
-/// ```
-/// use arc_forge_defi::validator::TokenValidator;
-///
-/// let validator = TokenValidator::new("https://api.mainnet-beta.solana.com");
-/// ```
 impl TokenValidator {
     /// Create a new validator backed by a Solana RPC endpoint.
     pub fn new(rpc_url: impl Into<String>) -> Self {
@@ -610,10 +602,6 @@ mod tests {
     ///
     /// A [`MintInfo`] struct with the mint token details including a mint authority and zero
     /// supply.
-    ///
-    /// # Panics
-    ///
-    /// * Panics if the token validation fails.
     #[test]
     fn risk_score_caps_at_100() {
         let mint = MintInfo {

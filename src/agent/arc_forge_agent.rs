@@ -32,17 +32,6 @@
 
 /// The `ArcForgeAgent` is responsible for analysing Solana token launch simulations
 /// and providing natural-language risk assessments.
-///
-/// # Example
-///
-/// ```
-/// use polar_bear_arc_forge_defi::agent::ArcForgeAgent;
-///
-/// let agent = ArcForgeAgent::new();
-/// let result = agent.analyse_simulation().await?;
-///
-/// println!("{:?}", result);
-/// ```
 use anyhow::Result;
 /// The `ArcForgeAgent` is responsible for analysing Solana token launch simulations
 /// and providing natural-language risk assessments.
