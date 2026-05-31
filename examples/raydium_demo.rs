@@ -11,8 +11,13 @@
 //!
 //! No API key required.  Connects to the public Raydium v3 API.
 
+/// Re-exports the `RaydiumClient` struct.
 use polar_bear_arc_forge_defi::defi::{RaydiumClient, SOL_MINT, USDC_MINT};
 
+/// Demonstrates the Raydium v3 REST API integration - queries live pool
+/// data for native SOL and USDC.
+///
+/// No API key required.  Connects to the public Raydium v3 API.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
@@ -62,6 +67,18 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Prints a formatted summary of the Raydium pool health data.
+///
+/// # Arguments
+///
+/// * `s` - The `PoolHealthSummary` to print.
+///
+/// # Examples
+///
+/// ```
+/// let summary = raydium::get_pool_health_summary("SOL");
+/// print_summary(&summary);
+/// ```
 fn print_summary(s: &polar_bear_arc_forge_defi::defi::raydium::PoolHealthSummary) {
     if let Some(ref e) = s.error {
         eprintln!("  ⚠  {e}");

@@ -10,6 +10,15 @@
 //! Run single: cargo test `test_full_launch_simulation` -- --nocapture
 //! ─────────────────────────────────────────────────────────────────────────────
 
+/// Asserts that the `ArcForgeLauncher` can simulate a full launch successfully.
+///
+/// It uses the `safe_config()` function to simulate a launch and checks that
+/// the `ValidationStatus` is `Ok` and the `LaunchSimulation` can be serialised to JSON.
+///
+/// # Panics
+///
+/// This test will panic if the `ValidationStatus` is not `Ok` or the `LaunchSimulation` cannot
+/// be serialised to JSON.
 use polar_bear_arc_forge_defi::{
     defi::liquidity::DeepLiquidityProtocol,
     forge::ArcForgeLauncher,
@@ -17,9 +26,12 @@ use polar_bear_arc_forge_defi::{
     validator::TokenValidator,
 };
 
-// ─── Fixtures ─────────────────────────────────────────────────────────────────
-
 /// A fully safe launch configuration - should score >= 80 readiness.
+///
+/// This function returns a `LaunchConfig` with all safety features enabled,
+/// suitable for testing a safe launch simulation.
+///
+/// This config is safe to use in a production environment.
 fn safe_launch_config() -> LaunchConfig {
     LaunchConfig {
         token_name: "Polar Bear Token".to_string(),
@@ -41,6 +53,11 @@ fn safe_launch_config() -> LaunchConfig {
 }
 
 /// A dangerous launch config - both authorities retained, no LP safety.
+///
+/// This function returns a `LaunchConfig` with all safety features disabled,
+/// suitable for testing a dangerous launch simulation.
+///
+/// This config is not safe to use in a production environment.
 fn dangerous_launch_config() -> LaunchConfig {
     LaunchConfig {
         token_name: "Rug Pull Token".to_string(),
@@ -61,8 +78,15 @@ fn dangerous_launch_config() -> LaunchConfig {
     }
 }
 
-// ─── Simulation tests ─────────────────────────────────────────────────────────
-
+/// Asserts that the `ArcForgeLauncher` can simulate a full launch successfully with a safe config.
+///
+/// It uses the `safe_launch_config()` function to simulate a launch and checks that
+/// the `ValidationStatus` is `Ok` and the `LaunchSimulation` can be serialised to JSON.
+///
+/// # Panics
+///
+/// This test will panic if the `ValidationStatus` is not `Ok` or the `LaunchSimulation` cannot
+/// be serialised to JSON.
 #[test]
 fn test_full_launch_simulation_safe_config() {
     let launcher = ArcForgeLauncher::new("https://api.devnet.solana.com");
@@ -96,6 +120,16 @@ fn test_full_launch_simulation_safe_config() {
     assert!(!sim.pev_loop_summary.validate.is_empty());
 }
 
+/// Asserts that the `ArcForgeLauncher` can simulate a full launch successfully with a dangerous
+/// config.
+///
+/// It uses the `dangerous_launch_config()` function to simulate a launch and checks that
+/// the `ValidationStatus` is `Dangerous` and the `LaunchSimulation` can be serialised to JSON.
+///
+/// # Panics
+///
+/// This test will panic if the `ValidationStatus` is not `Dangerous` or the `LaunchSimulation`
+/// cannot be serialised to JSON.
 #[test]
 fn test_full_launch_simulation_dangerous_config() {
     let launcher = ArcForgeLauncher::new("https://api.devnet.solana.com");
@@ -119,8 +153,10 @@ fn test_full_launch_simulation_dangerous_config() {
     assert!(sim.pev_loop_summary.validate.contains("BLOCKED"));
 }
 
-// ─── Validator tests ──────────────────────────────────────────────────────────
-
+/// Asserts that the `TokenValidator` correctly identifies a safe mint.
+///
+/// This test creates a `MintInfo` with no mint or freeze authority and verifies that
+/// the `TokenValidator` correctly identifies it as a safe mint.
 #[test]
 fn test_validator_safe_mint_all_checks_pass() {
     let mint = MintInfo {
@@ -140,6 +176,10 @@ fn test_validator_safe_mint_all_checks_pass() {
     assert!(report.recommendation.contains("safe to launch"));
 }
 
+/// Asserts that the `TokenValidator` correctly identifies a dangerous mint with a freeze authority.
+///
+/// This test creates a `MintInfo` with a `freeze_authority` and verifies that the `TokenValidator`
+/// correctly identifies it as a dangerous mint with a critical freeze authority check.
 #[test]
 fn test_validator_freeze_authority_is_critical() {
     let mint = MintInfo {
@@ -163,8 +203,10 @@ fn test_validator_freeze_authority_is_critical() {
     assert_eq!(freeze_check.status, ValidationStatus::Dangerous);
 }
 
-// ─── Liquidity tests ──────────────────────────────────────────────────────────
-
+/// Asserts that the `DeepLiquidityProtocol` correctly computes liquidity metrics for a safe launch.
+///
+/// This test uses the `safe_launch_config()` function to compute liquidity metrics and verifies
+/// that the price consistency check passes within floating-point tolerance.
 #[test]
 fn test_liquidity_metrics_price_consistency() {
     let config = safe_launch_config();
@@ -186,6 +228,10 @@ fn test_liquidity_metrics_price_consistency() {
     );
 }
 
+/// Asserts that the `DeepLiquidityProtocol` correctly computes the number of tokens in the pool.
+///
+/// This test uses the `safe_launch_config()` function to compute liquidity metrics and verifies
+/// that the number of tokens in the pool matches the expected 10% allocation.
 #[test]
 fn test_liquidity_tokens_in_pool() {
     let config = safe_launch_config();
@@ -195,6 +241,10 @@ fn test_liquidity_tokens_in_pool() {
     assert_eq!(m.tokens_in_pool, expected);
 }
 
+/// Asserts that the `DeepLiquidityProtocol` correctly orders price impacts.
+///
+/// This test uses the `safe_launch_config()` function to compute liquidity metrics and verifies
+/// that the price impact ordering is consistent with the expected $10K buy having higher impact.
 #[test]
 fn test_price_impact_ordering() {
     let config = safe_launch_config();
@@ -209,8 +259,10 @@ fn test_price_impact_ordering() {
     );
 }
 
-// ─── Serialisation tests ──────────────────────────────────────────────────────
-
+/// Asserts that the `LaunchSimulation` can be serialised and deserialised correctly.
+///
+/// This test creates a `LaunchSimulation` instance, serialises it to JSON, and then deserialises
+/// it back to verify that the data is preserved correctly.
 #[test]
 fn test_simulation_json_round_trip() {
     let launcher = ArcForgeLauncher::new("https://api.devnet.solana.com");
@@ -228,6 +280,10 @@ fn test_simulation_json_round_trip() {
     assert!(sim2.dry_run);
 }
 
+/// Asserts that the `ValidationReport` can be serialised and deserialised correctly.
+///
+/// This test creates a `ValidationReport` instance, serialises it to JSON, and then deserialises
+/// it back to verify that the data is preserved correctly.
 #[test]
 fn test_validation_report_json_serialisable() {
     let mint = MintInfo {

@@ -12,24 +12,61 @@
 //!
 //! Reference: <https://docs.raydium.io>
 
+/// Re-exports the [`anyhow`] crate for error handling.
+///
+/// This module is compiled conditionally via the `defi` feature flag.
 use anyhow::{Context, Result, anyhow};
+/// Re-exports the [`reqwest`] crate for HTTP requests.
+///
+/// This module is compiled conditionally via the `defi` feature flag.
 use reqwest::Client;
+/// Re-exports the [`serde`] crate for deserialization.
+///
+/// This module is compiled conditionally via the `defi` feature flag.
 use serde::Deserialize;
+/// Re-exports the [`tracing`] crate for logging.
+///
+/// This module is compiled conditionally via the `defi` feature flag.
 use tracing::{debug, info};
 
+/// Represents a Raydium pool on the Solana blockchain.
+///
+/// This struct is deserialized from the Raydium API response.
 use crate::types::RaydiumPool;
 
-// ── Well-known mints ──────────────────────────────────────────────────────────
-
 /// Native SOL wrapped mint address on Solana mainnet.
+///
+/// This is the mint address for the native SOL token on Solana mainnet.
+///
+/// This constant is used to identify the native SOL token in Raydium pools.
+///
+/// This constant is exported for use in other modules.
+///
+/// This constant is used to identify the native SOL token in Raydium pools.
 pub const SOL_MINT: &str = "So11111111111111111111111111111111111111112";
 /// USDC mint address on Solana mainnet.
+///
+/// This constant is exported for use in other modules.
+///
+/// This constant is used to identify the USDC token in Raydium pools.
 pub const USDC_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
+/// Base URL for the Raydium API.
+///
+/// This constant is used to construct the API request URLs.
+///
+/// This constant is exported for use in other modules.
+///
+/// This constant is used internally by the Raydium API client.
 const RAYDIUM_API_BASE: &str = "https://api-v3.raydium.io";
 
-// ── Raydium API response shapes ───────────────────────────────────────────────
-
+/// Response shape for the Raydium API.
+///
+/// This struct is used to deserialize the API response from the Raydium API.
+///
+/// This struct is used internally by the Raydium API client.
+///
+/// This struct is generic over the type of the `data` field.
 #[derive(Deserialize)]
 struct ApiResponse<T> {
     success: bool,
@@ -38,11 +75,25 @@ struct ApiResponse<T> {
     msg: Option<String>,
 }
 
+/// Page of Raydium pools.
+///
+/// This struct is used to deserialize the API response from the Raydium API.
+///
+/// This struct is used internally by the Raydium API client.
+///
+/// This struct is generic over the type of the `data` field.
+///
+/// This struct is used to deserialize the `data` field of the API response.
 #[derive(Deserialize)]
 struct PoolPage {
     data: Vec<RawPool>,
 }
 
+/// Raw pool data from the Raydium API.
+///
+/// This struct is used to deserialize the `data` field of the API response.
+///
+/// This struct is used internally by the Raydium API client.
 #[allow(dead_code)]
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -60,6 +111,34 @@ struct RawPool {
     price: f64,
 }
 
+/// Raw mint metadata from the Raydium API.
+///
+/// This struct is used to deserialize the `mintA` and `mintB` fields of the API response.
+///
+/// This struct is used internally by the Raydium API client.
+///
+/// This struct is generic over the type of the `data` field.
+///
+/// # Examples
+///
+/// ```
+/// use serde_json::json;
+/// use defi::raydium::RawMintMeta;
+///
+/// let data = json!({
+///     "address": "0x...",
+///     "symbol": "SOL",
+/// });
+///
+/// let mint_meta: RawMintMeta = serde_json::from_value(data).unwrap();
+/// ```
+///
+/// This struct is generic over the type of the `data` field.
+///
+/// # Fields
+///
+/// - `address`: The mint address of the token.
+/// - `symbol`: The symbol of the token.
 #[derive(Deserialize)]
 struct RawMintMeta {
     address: String,
@@ -67,6 +146,12 @@ struct RawMintMeta {
     symbol: String,
 }
 
+/// Day statistics for a token.
+///
+/// # Fields
+///
+/// - `volume`: The volume of the token in USD.
+/// - `apr`: The APR of the token.
 #[derive(Deserialize)]
 struct DayStats {
     #[serde(default)]
@@ -75,9 +160,17 @@ struct DayStats {
     apr: f64,
 }
 
-// ── PoolHealthSummary ─────────────────────────────────────────────────────────
-
 /// Aggregated health metrics for a token across all its Raydium pools.
+///
+/// # Fields
+///
+/// - `token_mint`: The token mint that was queried.
+/// - `pool_count`: Number of active pools found.
+/// - `total_tvl_usd`: Sum of TVL across all pools in USD.
+/// - `total_volume_24h_usd`: Sum of 24-hour volume across all pools in USD.
+/// - `best_apy`: Highest APY across all pools.
+/// - `pools`: Individual pool details.
+/// - `error`: Set if the API call failed or returned no pools.
 #[derive(Debug, serde::Serialize)]
 pub struct PoolHealthSummary {
     /// The token mint that was queried.
@@ -96,19 +189,48 @@ pub struct PoolHealthSummary {
     pub error: Option<String>,
 }
 
-// ── RaydiumClient ─────────────────────────────────────────────────────────────
-
 /// Raydium v3 REST API client.
+///
+/// # Fields
+///
+/// - `http`: The underlying HTTP client used for making requests.
+///
+/// # Examples
+///
+/// ```
+/// let client = RaydiumClient::new();
+/// ```
 pub struct RaydiumClient {
     http: Client,
 }
 
+/// Construct a new `RaydiumClient` with a 20-second request timeout.
+///
+/// # Panics
+///
+/// Panics if the underlying `reqwest` client cannot be constructed.  In
+/// practice this is infallible for the configuration used here (no TLS
+/// customisation, no invalid header values), so the panic should never
+/// trigger at runtime.
+///
+/// # Examples
+///
+/// ```
+/// let client = RaydiumClient::new();
+/// ```
 impl Default for RaydiumClient {
     fn default() -> Self {
         Self::new()
     }
 }
 
+/// A client for interacting with the Raydium API.
+///
+/// # Examples
+///
+/// ```
+/// let client = RaydiumClient::new();
+/// ```
 impl RaydiumClient {
     /// Create a new client with a 20-second request timeout.
     ///
@@ -118,6 +240,16 @@ impl RaydiumClient {
     /// practice this is infallible for the configuration used here (no TLS
     /// customisation, no invalid header values), so the panic should never
     /// trigger at runtime.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the underlying `reqwest` client cannot be constructed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let client = RaydiumClient::new();
+    /// ```
     pub fn new() -> Self {
         Self {
             http: Client::builder()
@@ -131,6 +263,25 @@ impl RaydiumClient {
     /// Fetch pools for `mint`, filtered by `pool_type`, sorted by TVL descending.
     ///
     /// `pool_type` accepts `"all"`, `"standard"`, or `"concentrated"`.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` containing a vector of `RaydiumPool` objects on success,
+    /// or an error if the request fails.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let pools = client.get_pools_for_mint("SOL", "standard", 10).await.unwrap();
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if the underlying `reqwest` client cannot be constructed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the HTTP request fails or the response is not successful.
     pub async fn get_pools_for_mint(
         &self,
         mint: &str,
@@ -190,6 +341,17 @@ impl RaydiumClient {
     ///
     /// Errors from the API are captured in [`PoolHealthSummary::error`] rather
     /// than propagated, so callers can render partial results.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `PoolHealthSummary` containing the aggregated health of all pools
+    /// for the given mint, or an error if the request fails.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let summary = client.pool_health_summary("SOL").await;
+    /// ```
     pub async fn pool_health_summary(&self, token_mint: &str) -> PoolHealthSummary {
         match self.get_pools_for_mint(token_mint, "all", 10).await {
             Ok(pools) if !pools.is_empty() => {
@@ -228,8 +390,19 @@ impl RaydiumClient {
     }
 }
 
-// ── Conversion ────────────────────────────────────────────────────────────────
-
+/// Converts a raw pool response into a `RaydiumPool`.
+///
+/// # Arguments
+///
+/// * `raw` - The raw pool response to convert.
+///
+/// # Returns
+///
+/// Returns a `RaydiumPool` with the fields mapped from the raw response.
+///
+/// # Panics
+///
+/// Panics if the raw response is invalid.
 fn into_pool(raw: RawPool) -> RaydiumPool {
     RaydiumPool {
         pool_id: raw.id,
@@ -244,12 +417,22 @@ fn into_pool(raw: RawPool) -> RaydiumPool {
     }
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
+/// Tests for the `into_pool` function.
+///
+/// Tests that `into_pool` correctly maps fields from a raw pool response to a `RaydiumPool`.
+///
+/// Tests that `into_pool` panics when given an invalid raw pool response.
+///
+/// Tests that `into_pool` correctly handles missing day stats.
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    /// Tests that `into_pool` correctly maps fields from a raw pool response to a `RaydiumPool`.
+    ///
+    /// Tests that `into_pool` panics when given an invalid raw pool response.
+    ///
+    /// Tests that `into_pool` correctly handles missing day stats.
     #[test]
     fn into_pool_maps_fields_correctly() {
         let raw = RawPool {
@@ -277,6 +460,10 @@ mod tests {
         assert!((pool.apy - 55.5).abs() < f64::EPSILON);
     }
 
+    /// Tests that `into_pool` correctly handles missing day stats.
+    ///
+    /// Tests that `into_pool` correctly handles missing day stats by setting `volume_24h_usd` and
+    /// `apy` to 0.
     #[test]
     fn into_pool_handles_missing_day_stats() {
         let raw = RawPool {

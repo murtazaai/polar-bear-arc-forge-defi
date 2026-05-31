@@ -8,6 +8,11 @@
 //! ARC Forge blocks a launch whenever `risk_score > 0` on any
 //! [`ValidationStatus::Dangerous`] check.
 
+/// Validates an SPL Token mint against all sniper-bot prevention checks.
+///
+/// This is the main struct used to validate token accounts.
+///
+/// It wraps a [`SolanaRpcClient`] and provides methods to validate token mints.
 use anyhow::Result;
 use chrono::Utc;
 use tracing::info;
@@ -17,13 +22,28 @@ use crate::{
     types::{MintInfo, ValidationCheck, ValidationReport, ValidationStatus},
 };
 
-// ── TokenValidator ────────────────────────────────────────────────────────────
-
 /// Validates an SPL Token mint against all sniper-bot prevention checks.
+///
+/// This is the main struct used to validate token accounts.
+///
+/// It wraps a [`SolanaRpcClient`] and provides methods to validate token mints.
 pub struct TokenValidator {
     rpc: SolanaRpcClient,
 }
 
+/// Validates an SPL Token mint against all sniper-bot prevention checks.
+///
+/// This is the main struct used to validate token accounts.
+///
+/// It wraps a [`SolanaRpcClient`] and provides methods to validate token mints.
+///
+/// # Examples
+///
+/// ```
+/// use arc_forge_defi::validator::TokenValidator;
+///
+/// let validator = TokenValidator::new("https://api.mainnet-beta.solana.com");
+/// ```
 impl TokenValidator {
     /// Create a new validator backed by a Solana RPC endpoint.
     pub fn new(rpc_url: impl Into<String>) -> Self {
@@ -36,6 +56,14 @@ impl TokenValidator {
     ///
     /// This is the **Perceive** stage of the ARC Forge PEV loop.
     /// Connects to the live RPC endpoint; requires network access.
+    ///
+    /// # Arguments
+    ///
+    /// * `mint_address` - The address of the SPL Token mint to validate.
+    ///
+    /// # Returns
+    ///
+    /// A [`ValidationReport`] containing the results of the validation checks.
     pub async fn validate(&self, mint_address: &str) -> Result<ValidationReport> {
         info!(mint = mint_address, "Fetching mint info from Solana RPC");
         let mint = self.rpc.get_mint_info(mint_address).await?;
@@ -53,6 +81,14 @@ impl TokenValidator {
     ///
     /// Used in unit tests and launch simulations where the mint data is
     /// synthesised from a [`LaunchConfig`](crate::types::LaunchConfig).
+    ///
+    /// # Arguments
+    ///
+    /// * `mint` - The [`MintInfo`] to validate.
+    ///
+    /// # Returns
+    ///
+    /// A [`ValidationReport`] containing the results of the validation checks.
     pub fn validate_mint_info(&self, mint: &MintInfo) -> ValidationReport {
         let checks = run_all_checks(mint);
         let risk_score = score(&checks);
@@ -70,8 +106,28 @@ impl TokenValidator {
     }
 }
 
-// ── Checks ────────────────────────────────────────────────────────────────────
-
+/// Runs all validation checks on the given [`MintInfo`] and returns the results.
+///
+/// # Arguments
+///
+/// * `mint` - The [`MintInfo`] to validate.
+///
+/// # Returns
+///
+/// A vector of [`ValidationCheck`] results.
+///
+/// The checks are run in the following order:
+///
+/// 1. **Freeze Authority**
+/// 2. **Mint Authority**
+/// 3. **Is Initialized**
+/// 4. **Decimals**
+/// 5. **Zero Supply**
+/// 6. **Supply Upper Bound**
+///
+/// # Returns
+///
+/// A vector of [`ValidationCheck`] results.
 fn run_all_checks(mint: &MintInfo) -> Vec<ValidationCheck> {
     vec![
         check_freeze_authority(mint),
@@ -147,6 +203,14 @@ fn check_mint_authority(mint: &MintInfo) -> ValidationCheck {
 /// **Check 3 - Mint Initialized**
 ///
 /// A mint account that has not been initialised on-chain is not a real token.
+///
+/// # Arguments
+///
+/// * `mint` - The [`MintInfo`] to validate.
+///
+/// # Returns
+///
+/// A [`ValidationCheck`] result.
 fn check_is_initialized(mint: &MintInfo) -> ValidationCheck {
     if mint.is_initialized {
         ValidationCheck {
@@ -172,6 +236,14 @@ fn check_is_initialized(mint: &MintInfo) -> ValidationCheck {
 /// Non-standard decimals (0, 1, or > 18) are sometimes used to create optical
 /// illusions about token price in wallet and DEX UIs.  Standard Solana tokens
 /// use 6–9 decimal places.
+///
+/// # Arguments
+///
+/// * `mint` - The [`MintInfo`] to validate.
+///
+/// # Returns
+///
+/// A [`ValidationCheck`] result.
 fn check_decimals(mint: &MintInfo) -> ValidationCheck {
     match mint.decimals {
         6..=9 => ValidationCheck {
@@ -211,6 +283,14 @@ fn check_decimals(mint: &MintInfo) -> ValidationCheck {
 /// A supply of zero combined with an active `mint_authority` is a stealth-mint
 /// setup: the deployer can mint tokens at any time, potentially front-running
 /// buyers.
+///
+/// # Arguments
+///
+/// * `mint` - The [`MintInfo`] to validate.
+///
+/// # Returns
+///
+/// A [`ValidationCheck`] result.
 fn check_zero_supply(mint: &MintInfo) -> ValidationCheck {
     if mint.supply == 0 && mint.mint_authority.is_some() {
         ValidationCheck {
@@ -247,6 +327,14 @@ fn check_zero_supply(mint: &MintInfo) -> ValidationCheck {
 /// An astronomically large adjusted supply (> 1 quadrillion tokens) combined
 /// with minimal initial liquidity creates extreme volatility and decimal-trick
 /// price manipulation in DEX UIs.
+///
+/// # Arguments
+///
+/// * `mint` - The [`MintInfo`] to validate.
+///
+/// # Returns
+///
+/// A [`ValidationCheck`] result.
 fn check_supply_upper_bound(mint: &MintInfo) -> ValidationCheck {
     let adjusted = adjusted_supply(mint.supply, mint.decimals);
     let quadrillion = 1_000_000_000_000_000_f64;
@@ -271,8 +359,15 @@ fn check_supply_upper_bound(mint: &MintInfo) -> ValidationCheck {
     }
 }
 
-// ── Scoring ───────────────────────────────────────────────────────────────────
-
+/// Scores the overall risk of a token based on the validation checks.
+///
+/// # Arguments
+///
+/// * `checks` - The list of [`ValidationCheck`] results to score.
+///
+/// # Returns
+///
+/// The risk score as an `u8` value (0-100).
 fn score(checks: &[ValidationCheck]) -> u8 {
     let total: u32 = checks
         .iter()
@@ -285,6 +380,15 @@ fn score(checks: &[ValidationCheck]) -> u8 {
     total.min(100) as u8
 }
 
+/// Determines the overall validation status based on the risk score.
+///
+/// # Arguments
+///
+/// * `risk_score` - The risk score to evaluate.
+///
+/// # Returns
+///
+/// The [`ValidationStatus`] based on the risk score.
 fn overall(risk_score: u8) -> ValidationStatus {
     if risk_score == 0 {
         ValidationStatus::Safe
@@ -295,6 +399,16 @@ fn overall(risk_score: u8) -> ValidationStatus {
     }
 }
 
+/// Provides a recommendation based on the validation status and failed checks.
+///
+/// # Arguments
+///
+/// * `status` - The [`ValidationStatus`] to base the recommendation on.
+/// * `checks` - The list of [`ValidationCheck`] results to include in the recommendation.
+///
+/// # Returns
+///
+/// The recommendation text as a [`String`].
 fn recommendation(status: &ValidationStatus, checks: &[ValidationCheck]) -> String {
     let failed: Vec<&str> = checks
         .iter()
@@ -318,8 +432,15 @@ fn recommendation(status: &ValidationStatus, checks: &[ValidationCheck]) -> Stri
     }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
+/// Shortens a public key to a human-readable format, truncating the middle if too long.
+///
+/// # Arguments
+///
+/// * `pk` - The public key to shorten.
+///
+/// # Returns
+///
+/// The shortened public key as a [`String`].
 fn short(pk: &str) -> String {
     if pk.len() <= 12 {
         pk.to_string()
@@ -328,6 +449,16 @@ fn short(pk: &str) -> String {
     }
 }
 
+/// Adjusts the supply value to the given number of decimals.
+///
+/// # Arguments
+///
+/// * `supply` - The supply value to adjust.
+/// * `decimals` - The number of decimals to adjust to.
+///
+/// # Returns
+///
+/// The adjusted supply value as a [`f64`].
 fn adjusted_supply(supply: u64, decimals: u8) -> f64 {
     // Split supply into hi/lo u32 halves to avoid cast_precision_loss
     // (u64 -> f64 loses precision above 2^52).
@@ -337,16 +468,40 @@ fn adjusted_supply(supply: u64, decimals: u8) -> f64 {
     as_f64 / 10_f64.powi(i32::from(decimals))
 }
 
+/// Formats the supply value to a human-readable string with the given number of decimals.
+///
+/// # Arguments
+///
+/// * `supply` - The supply value to format.
+/// * `decimals` - The number of decimals to format to.
+///
+/// # Returns
+///
+/// The formatted supply value as a [`String`].
 fn format_supply(supply: u64, decimals: u8) -> String {
     format!("{:.2}", adjusted_supply(supply, decimals))
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
+/// Tests for the [`TokenValidator`] token validation functionality.
+///
+/// Tests the validation of a safe mint token, ensuring it scores zero risk.
+///
+/// # Tests
+///
+/// * `safe_mint` - Validates a safe mint token, expecting a score of zero.
+///
+/// # Panics
+///
+/// * Panics if the token validation fails.
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    /// Returns a sample [`MintInfo`] struct representing a safe mint token.
+    ///
+    /// # Returns
+    ///
+    /// A [`MintInfo`] struct with the safe mint token details.
     fn safe_mint() -> MintInfo {
         MintInfo {
             address: "SafeMint111111111111111111111111111111111".to_string(),
@@ -358,10 +513,20 @@ mod tests {
         }
     }
 
+    /// Returns a sample [`TokenValidator`] instance configured for testing.
+    ///
+    /// # Returns
+    ///
+    /// A [`TokenValidator`] instance with the devnet RPC endpoint configured.
     fn validator() -> TokenValidator {
         TokenValidator::new("https://api.devnet.solana.com")
     }
 
+    /// Returns a sample [`MintInfo`] struct representing a mint token with a freeze authority.
+    ///
+    /// # Returns
+    ///
+    /// A [`MintInfo`] struct with the mint token details including a freeze authority.
     #[test]
     fn safe_mint_scores_zero() {
         let report = validator().validate_mint_info(&safe_mint());
@@ -370,6 +535,11 @@ mod tests {
         assert!(report.checks.iter().all(|c| c.passed));
     }
 
+    /// Returns a sample [`MintInfo`] struct representing a mint token with a freeze authority.
+    ///
+    /// # Returns
+    ///
+    /// A [`MintInfo`] struct with the mint token details including a freeze authority.
     #[test]
     fn freeze_authority_is_dangerous() {
         let mut mint = safe_mint();
@@ -385,6 +555,15 @@ mod tests {
         assert_eq!(check.status, ValidationStatus::Dangerous);
     }
 
+    /// Returns a sample [`MintInfo`] struct representing a mint token with a mint authority.
+    ///
+    /// # Returns
+    ///
+    /// A [`MintInfo`] struct with the mint token details including a mint authority.
+    ///
+    /// # Panics
+    ///
+    /// * Panics if the token validation fails.
     #[test]
     fn mint_authority_is_warning() {
         let mut mint = safe_mint();
@@ -399,6 +578,17 @@ mod tests {
         assert_eq!(check.status, ValidationStatus::Warning);
     }
 
+    /// Returns a sample [`MintInfo`] struct representing a mint token with a mint authority and
+    /// zero supply.
+    ///
+    /// # Returns
+    ///
+    /// A [`MintInfo`] struct with the mint token details including a mint authority and zero
+    /// supply.
+    ///
+    /// # Panics
+    ///
+    /// * Panics if the token validation fails.
     #[test]
     fn zero_supply_with_mint_auth_is_dangerous() {
         let mut mint = safe_mint();
@@ -413,6 +603,17 @@ mod tests {
         assert_eq!(check.status, ValidationStatus::Dangerous);
     }
 
+    /// Returns a sample [`MintInfo`] struct representing a mint token with a mint authority and
+    /// zero supply.
+    ///
+    /// # Returns
+    ///
+    /// A [`MintInfo`] struct with the mint token details including a mint authority and zero
+    /// supply.
+    ///
+    /// # Panics
+    ///
+    /// * Panics if the token validation fails.
     #[test]
     fn risk_score_caps_at_100() {
         let mint = MintInfo {

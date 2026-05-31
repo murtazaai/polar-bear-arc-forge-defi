@@ -12,8 +12,18 @@
 //!   check      Connectivity check: Solana RPC slot + Raydium API ping
 //! ```
 
+/// Convenience re-exports from the `anyhow` module.
+///
+/// This module re-exports the `Result` type from the `anyhow` module.
 use anyhow::Result;
+/// Convenience re-exports from the `clap` module.
+///
+/// This module re-exports the `Parser` and `Subcommand` types from the `clap` module.
 use clap::{Parser, Subcommand};
+/// Convenience re-exports from the `tracing_subscriber` module.
+///
+/// This module re-exports the `EnvFilter` and `FmtSubscriber` types from the
+/// `tracing_subscriber` module.
 use polar_bear_arc_forge_defi::{
     agent::ArcForgeAgent,
     defi::RaydiumClient,
@@ -22,9 +32,8 @@ use polar_bear_arc_forge_defi::{
     types::{LaunchConfig, LiquidityConfig, SolanaNetwork, ValidationStatus},
     validator::TokenValidator,
 };
+/// Convenience re-exports from the `tracing_subscriber` module.
 use tracing_subscriber::{EnvFilter, FmtSubscriber};
-
-// ── CLI ───────────────────────────────────────────────────────────────────────
 
 #[derive(Parser)]
 #[command(
@@ -35,6 +44,7 @@ use tracing_subscriber::{EnvFilter, FmtSubscriber};
              https://github.com/murtazaai/polar-bear-arc-forge-defi",
     long_about = None,
 )]
+/// CLI for the ARC Forge `DeFi` platform.
 struct Cli {
     /// Solana RPC endpoint (overrides `SOLANA_RPC_URL` env var).
     #[arg(
@@ -43,31 +53,67 @@ struct Cli {
         default_value = "https://api.devnet.solana.com",
         global = true
     )]
+    /// Solana RPC endpoint URL.
     rpc_url: String,
 
     /// Log level: error | warn | info | debug | trace
     #[arg(long, env = "RUST_LOG", default_value = "info", global = true)]
     log_level: String,
 
+    /// Subcommand to execute.
     #[command(subcommand)]
     command: Commands,
 }
 
+/// Subcommands for the ARC Forge `DeFi` platform.
+///
+/// Each subcommand corresponds to a specific ARC Forge `DeFi` platform operation.
 #[derive(Subcommand)]
 enum Commands {
     /// Fetch a live SPL Token mint and run all sniper-bot prevention checks.
+    ///
+    /// This command validates a given SPL Token mint address and runs all necessary checks to
+    /// prevent sniper-bot activity.
+    ///
+    /// # Arguments
+    ///
+    /// * `mint` - SPL Token mint address (base58-encoded).
+    /// * `json` - Emit JSON instead of human-readable output.
     Validate {
         /// SPL Token mint address (base58-encoded).
+        ///
+        /// This is the mint address of the SPL Token to validate.
         #[arg(short, long)]
         mint: String,
         /// Emit JSON instead of human-readable output.
+        ///
+        /// This flag enables JSON output instead of the default human-readable format.
         #[arg(long)]
         json: bool,
     },
 
     /// Query the Raydium v3 REST API for pool data.
+    ///
+    /// This command fetches pool data from the Raydium v3 REST API and displays it in the console.
+    ///
+    /// # Arguments
+    ///
+    /// * `mint` - Token mint to query (defaults to native SOL).
+    /// * `pool_type` - Pool type filter: all | standard | concentrated.
+    /// * `limit` - Maximum number of pools to return (1–20).
+    /// * `json` - Emit JSON.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// $ arc-forge raydium --mint So11111111111111111111111111111111111111112 --pool-type standard --limit 10 --json
+    /// ```
     Raydium {
         /// Token mint to query (defaults to native SOL).
+        ///
+        /// This is the base58-encoded mint address of the token to query.
+        ///
+        /// Defaults to `So11111111111111111111111111111111111111112` (native SOL).
         #[arg(
             short,
             long,
@@ -75,46 +121,85 @@ enum Commands {
         )]
         mint: String,
         /// Pool type filter: all | standard | concentrated
+        ///
+        /// Defaults to `all`.
+        ///
+        /// Valid values are `all`, `standard`, and `concentrated`.
         #[arg(long, default_value = "all")]
         pool_type: String,
         /// Maximum number of pools to return (1–20).
+        ///
+        /// Defaults to `5`.
         #[arg(long, default_value = "5")]
         limit: u32,
         /// Emit JSON.
+        ///
+        /// Defaults to `false`.
+        ///
+        /// If `true`, the output will be emitted as JSON.
         #[arg(long)]
         json: bool,
     },
 
     /// Run a full ARC Forge launch simulation (always dry-run, no SOL spent).
+    ///
+    /// This command simulates a full ARC Forge launch, including token creation, liquidity pool
+    /// creation, and token distribution.
+    ///
+    /// If `json` is `true`, the output will be emitted as JSON.
+    ///
+    /// If `json` is `false`, the output will be emitted as a human-readable summary.
     Launch {
         /// Total token supply in smallest units.
+        ///
+        /// Defaults to `1000000000000000` (1 million tokens).
         #[arg(long, default_value = "1000000000000000")]
         supply: u64,
         /// Token decimal places (standard: 9).
+        ///
+        /// Defaults to `9`.
+        ///
+        /// Must be between `0` and `18` (inclusive).
         #[arg(long, default_value = "9")]
         decimals: u8,
         /// Token name.
+        ///
+        /// Defaults to `"ARC Forge Demo Token"`.
         #[arg(long, default_value = "ARC Forge Demo Token")]
         name: String,
         /// Token ticker symbol.
+        ///
+        /// Defaults to `"ARCD"`.
         #[arg(long, default_value = "ARCD")]
         symbol: String,
         /// SOL for the initial liquidity pool.
+        ///
+        /// Defaults to `20.0`.
         #[arg(long, default_value = "20.0")]
         sol: f64,
         /// Percentage of supply in the initial LP pool.
+        ///
+        /// Defaults to `10.0`.
         #[arg(long, default_value = "10.0")]
         lp_pct: f64,
         /// Burn LP tokens (permanent, strongest anti-rug).
+        ///
+        /// Defaults to `false`.
         #[arg(long)]
         burn_lp: bool,
         /// Days to lock LP tokens (ignored when --burn-lp is set).
+        ///
+        /// Defaults to `0`.
         #[arg(long, default_value = "0")]
         lock_days: u32,
         /// Simulate against an existing on-chain mint instead of a planned config.
+        ///
+        /// Defaults to `None`.
         #[arg(long)]
         mint: Option<String>,
         /// Emit JSON.
+        ///
+        /// Defaults to `false`.
         #[arg(long)]
         json: bool,
     },
@@ -122,39 +207,58 @@ enum Commands {
     /// Launch simulation + Rig (ARC) AI agent analysis.
     ///
     /// Requires --features ai-agent and `ANTHROPIC_API_KEY`.
+    ///
+    /// Defaults to `false`.
     Agent {
         /// Total token supply.
+        ///
+        /// Defaults to `1000000000000000`.
         #[arg(long, default_value = "1000000000000000")]
         supply: u64,
         /// Token decimal places.
+        ///
+        /// Defaults to `9`.
         #[arg(long, default_value = "9")]
         decimals: u8,
         /// Token name.
+        ///
+        /// Defaults to `ARC Forge Demo Token`.
         #[arg(long, default_value = "ARC Forge Demo Token")]
         name: String,
         /// Token symbol.
+        ///
+        /// Defaults to `ARCD`.
         #[arg(long, default_value = "ARCD")]
         symbol: String,
         /// SOL for initial liquidity.
+        ///
+        /// Defaults to `20.0`.
         #[arg(long, default_value = "20.0")]
         sol: f64,
         /// LP supply allocation percentage.
+        ///
+        /// Defaults to `10.0`.
         #[arg(long, default_value = "10.0")]
         lp_pct: f64,
         /// Burn LP tokens.
+        ///
+        /// Defaults to `false`.
         #[arg(long)]
         burn_lp: bool,
         /// Emit JSON.
+        ///
+        /// Defaults to `false`.
         #[arg(long)]
         json: bool,
     },
 
     /// Connectivity check: Solana RPC current slot + Raydium API ping.
+    ///
+    /// Defaults to `false`.
     Check,
 }
 
-// ── main ──────────────────────────────────────────────────────────────────────
-
+/// Launch a new SPL Token on Solana using the ARC Forge protocol.
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -227,8 +331,12 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-// ── Command handlers ──────────────────────────────────────────────────────────
-
+/// Validate a SPL Token on Solana using the ARC Forge protocol.
+///
+/// Defaults to `false` for JSON output.
+///
+/// Returns a validation report as JSON if `json` is `true`, otherwise prints a human-readable
+/// summary.
 async fn run_validate(rpc_url: &str, mint: &str, json: bool) -> Result<()> {
     let report = TokenValidator::new(rpc_url).validate(mint).await?;
     if json {
@@ -239,6 +347,11 @@ async fn run_validate(rpc_url: &str, mint: &str, json: bool) -> Result<()> {
     Ok(())
 }
 
+/// Fetch Raydium pools for a given SPL Token and pool type.
+///
+/// Defaults to `false` for JSON output.
+///
+/// Returns a list of pools as JSON if `json` is `true`, otherwise prints a human-readable summary.
 async fn run_raydium(mint: &str, pool_type: &str, limit: u32, json: bool) -> Result<()> {
     let client = RaydiumClient::new();
     if json {
@@ -251,6 +364,11 @@ async fn run_raydium(mint: &str, pool_type: &str, limit: u32, json: bool) -> Res
     Ok(())
 }
 
+/// Launch a new SPL Token on Solana using the ARC Forge protocol.
+///
+/// Defaults to `false` for JSON output.
+///
+/// Returns a launch report as JSON if `json` is `true`, otherwise prints a human-readable summary.
 async fn run_launch(
     rpc_url: &str,
     cfg: LaunchConfig,
@@ -270,6 +388,11 @@ async fn run_launch(
     Ok(())
 }
 
+/// Run the agent for a given SPL Token on Solana using the ARC Forge protocol.
+///
+/// Defaults to `false` for JSON output.
+///
+/// Returns an agent report as JSON if `json` is `true`, otherwise prints a human-readable summary.
 async fn run_agent(
     rpc_url: &str,
     name: String,
@@ -307,6 +430,12 @@ async fn run_agent(
     Ok(())
 }
 
+
+/// Run the connectivity check for a given Solana RPC URL and Raydium v3 API.
+///
+/// Prints a human-readable summary of the checks.
+///
+/// Returns `Ok(())` if all checks pass, otherwise returns an error.
 async fn run_check(rpc_url: &str) {
     println!("🔍  Connectivity check\n");
     print!("  Solana RPC ({rpc_url})  … ");
@@ -325,8 +454,14 @@ async fn run_check(rpc_url: &str) {
     println!("\n  All checks complete.");
 }
 
-// ── Display helpers ───────────────────────────────────────────────────────────
-
+/// Prints a human-readable summary of the validation report.
+///
+/// The report includes the mint address, timestamp, overall status, risk score, and individual
+/// check results.
+///
+/// # Arguments
+///
+/// * `report` - The validation report to print.
 fn print_validation(report: &polar_bear_arc_forge_defi::ValidationReport) {
     let wide = "═".repeat(70);
     let thin = "─".repeat(70);
@@ -353,6 +488,15 @@ fn print_validation(report: &polar_bear_arc_forge_defi::ValidationReport) {
     println!("{wide}\n");
 }
 
+/// Prints a human-readable summary of the Raydium pool health summary.
+///
+/// # Arguments
+///
+/// * `summary` - The Raydium pool health summary to print.
+///
+/// # Returns
+///
+/// * `()` - This function does not return a value.
 fn print_raydium(summary: &polar_bear_arc_forge_defi::defi::raydium::PoolHealthSummary) {
     let wide = "═".repeat(70);
     let thin = "─".repeat(70);
@@ -383,8 +527,22 @@ fn print_raydium(summary: &polar_bear_arc_forge_defi::defi::raydium::PoolHealthS
     println!("{wide}\n");
 }
 
-// ── Config builder ────────────────────────────────────────────────────────────
-
+/// Builds a [`LaunchConfig`] from the given token details and parameters.
+///
+/// # Arguments
+///
+/// * `name` - The name of the token.
+/// * `symbol` - The symbol of the token.
+/// * `supply` - The total supply of the token.
+/// * `decimals` - The number of decimals of the token.
+/// * `sol` - The initial liquidity in SOL.
+/// * `lp_pct` - The token allocation percentage in the liquidity pool.
+/// * `burn_lp` - Whether to burn LP tokens.
+/// * `lock_days` - The duration of the lock in days.
+///
+/// # Returns
+///
+/// * `LaunchConfig` - The built launch configuration.
 fn build_config(
     name: String,
     symbol: String,

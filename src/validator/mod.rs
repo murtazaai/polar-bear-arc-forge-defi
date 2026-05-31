@@ -11,6 +11,12 @@
 //! | 5 | Zero Supply Guard | Supply=0 + live mint authority = stealth-mint honey-pot |
 //! | 6 | Supply Upper Bound | Astronomical supply creates decimal-trick manipulation |
 
+/// Validates a token account against a set of security checks.
+///
+/// See the [Solana RPC API documentation](https://docs.solana.com/developing/clients/jsonrpc-api) for more information.
 pub mod token_validator;
 
+/// Re-exports the [`TokenValidator`] struct.
+///
+/// This is the main struct used to validate token accounts.
 pub use token_validator::TokenValidator;

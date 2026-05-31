@@ -4,12 +4,14 @@
 //! and `agent` modules.  Every type is `Serialize + Deserialize` so the full
 //! [`LaunchSimulation`] report can be emitted as a JSON audit record.
 
+/// Represents a launch configuration for a token on the Solana blockchain.
+///
+/// This struct holds the parameters needed to launch a token on the Solana blockchain,
+/// including the token's name, symbol, supply, and liquidity pool allocation.
 use std::fmt;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-
-// ── Solana mint ───────────────────────────────────────────────────────────────
 
 /// SPL Token mint account decoded from raw Solana on-chain data.
 ///
@@ -35,16 +37,34 @@ pub struct MintInfo {
 // ── Validation ────────────────────────────────────────────────────────────────
 
 /// Risk level assigned to each [`ValidationCheck`].
+///
+/// # Variants
+///
+/// * `Safe` - No risk detected for this check.
+/// * `Warning` - Potential risk; review before launch.
+/// * `Dangerous` - Critical risk; ARC Forge blocks launch.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ValidationStatus {
     /// No risk detected for this check.
+    ///
+    /// This is the default status when no issues are found.
     Safe,
     /// Potential risk; review before launch.
     Warning,
     /// Critical risk; ARC Forge blocks launch.
+    ///
+    /// This status indicates a critical issue that must be addressed before launch.
+    ///
+    /// This status is used when the check detects a critical issue that could lead to a dangerous
+    /// situation.
     Dangerous,
 }
 
+/// Formats a `ValidationStatus` as a human-readable string.
+///
+/// This is used to display the status of a check in a human-readable format.
+///
+/// This is the default implementation for `fmt::Display` on `ValidationStatus`.
 impl fmt::Display for ValidationStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

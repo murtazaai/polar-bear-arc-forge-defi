@@ -34,18 +34,45 @@
 //! sim.print_report();
 //! ```
 
+/// Re-exports from the `agent` module.
+///
+/// This module re-exports the `ArcForgeAgent` struct and related types from the `agent` module.
 pub mod agent;
+/// Re-exports from the `defi` module.
+///
+/// This module re-exports the `defi` module and related types from the `defi` module.
 pub mod defi;
+/// Re-exports from the `forge` module.
+///
+/// This module re-exports the `forge` module and related types from the `forge` module.
 pub mod forge;
+/// Re-exports from the `rpc` module.
+///
+/// This module re-exports the `rpc` module and related types from the `rpc` module.
 pub mod rpc;
+/// Re-exports from the `types` module.
+///
+/// This module re-exports the `types` module and related types from the `types` module.
 pub mod types;
+/// Re-exports from the `validator` module.
+///
+/// This module re-exports the `validator` module and related types from the `validator` module.
 pub mod validator;
 
-// ── Convenience re-exports ────────────────────────────────────────────────────
-
+/// Convenience re-exports from the `forge` module.
+///
+/// This module re-exports the `ArcForgeLauncher` struct and related types from the `forge`
+/// module.
 pub use forge::ArcForgeLauncher;
+/// Convenience re-exports from the `types` module.
+///
+/// This module re-exports the `types` module and related types from the `types` module.
 pub use types::{
     LaunchConfig, LaunchSimulation, LiquidityConfig, LiquidityMetrics, MintInfo, PevLoopSummary,
     RaydiumPool, SolanaNetwork, ValidationCheck, ValidationReport, ValidationStatus,
 };
+/// Convenience re-exports from the `validator` module.
+///
+/// This module re-exports the `TokenValidator` struct and related types from the `validator`
+/// module.
 pub use validator::TokenValidator;

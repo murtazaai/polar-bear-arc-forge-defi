@@ -27,6 +27,9 @@
 //!           LAUNCH | REVIEW | BLOCK recommendation
 //! ```
 
+/// Demonstrates the `ArcForgeAgent` - a rig-core 0.37 agent wrapping
+/// `claude-sonnet-4-6` that analyses launch simulations and returns a
+/// structured `DeFi` security assessment.
 #[cfg(feature = "ai-agent")]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -95,6 +98,15 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Demonstrates the `ArcForgeAgent` - a rig-core 0.37 agent wrapping
+/// `claude-sonnet-4-6` that analyses launch simulations and returns a
+/// structured `DeFi` security assessment.
+///
+/// Requires the `ai-agent` feature to be enabled.
+///
+/// ```bash
+/// cargo run --example agent_demo --features ai-agent
+/// ```
 #[cfg(not(feature = "ai-agent"))]
 fn main() {
     eprintln!("This example requires the `ai-agent` feature.");

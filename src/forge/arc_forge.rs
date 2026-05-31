@@ -22,6 +22,10 @@
 //! submitted.  Every call that would normally submit a Solana instruction
 //! produces a structured log entry instead.
 
+/// Orchestrates the ARC Forge PEV loop and produces a [`LaunchSimulation`].
+///
+/// The [`ArcForgeLauncher`] is responsible for coordinating the PEV loop,
+/// including perceiving, evaluating, and validating the launch simulation.
 use anyhow::Result;
 use chrono::Utc;
 use tracing::info;
@@ -35,15 +39,26 @@ use crate::{
     validator::TokenValidator,
 };
 
-// ── ArcForgeLauncher ──────────────────────────────────────────────────────────
-
 /// Orchestrates the ARC Forge PEV loop and produces a [`LaunchSimulation`].
 pub struct ArcForgeLauncher {
     validator: TokenValidator,
 }
 
+/// Provides methods for simulating ARC Forge launches on existing on-chain mints.
+///
+/// The [`ArcForgeLauncher`] is responsible for coordinating the PEV loop,
+/// including perceiving, evaluating, and validating the launch simulation.
 impl ArcForgeLauncher {
     /// Create a launcher backed by the given Solana RPC endpoint.
+    ///
+    /// # Arguments
+    ///
+    /// * `rpc_url` - The URL of the Solana RPC endpoint to use.
+    ///
+    /// # Returns
+    ///
+    /// A new [`ArcForgeLauncher`] instance.
+    /// Initializes a new [`ArcForgeLauncher`] with the given Solana RPC endpoint.
     pub fn new(rpc_url: impl Into<String>) -> Self {
         Self {
             validator: TokenValidator::new(rpc_url),
@@ -56,6 +71,15 @@ impl ArcForgeLauncher {
     ///
     /// **Perceive**: fetches live SPL Token mint data from Solana RPC.
     /// Requires network access.
+    ///
+    /// # Arguments
+    ///
+    /// * `mint_address` - The address of the on-chain SPL Token mint to simulate.
+    /// * `config` - The launch configuration to use for the simulation.
+    ///
+    /// # Returns
+    ///
+    /// A [`LaunchSimulation`] result containing the simulation results.
     pub async fn simulate_existing_mint(
         &self,
         mint_address: &str,
@@ -70,13 +94,19 @@ impl ArcForgeLauncher {
         Ok(ArcForgeLauncher::build(config, report, "on-chain mint"))
     }
 
-    // ── Mode B: planned new token (no on-chain mint yet) ──────────────────────
-
     /// Run a full PEV-loop simulation for a planned new token.
     ///
     /// Synthesises a [`MintInfo`] from the [`LaunchConfig`] to represent the
     /// intended post-launch state (authorities renounced, supply minted).
     /// **No network access required.**
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - The launch configuration to use for the simulation.
+    ///
+    /// # Returns
+    ///
+    /// A [`LaunchSimulation`] result containing the simulation results.
     pub fn simulate_planned_launch(&self, config: LaunchConfig) -> LaunchSimulation {
         info!(
             token = %config.token_symbol,
@@ -88,8 +118,18 @@ impl ArcForgeLauncher {
         ArcForgeLauncher::build(config, report, "planned config")
     }
 
-    // ── Core builder ──────────────────────────────────────────────────────────
-
+    /// Builds a [`LaunchSimulation`] from the given configuration and report.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - The launch configuration to use for the simulation.
+    /// * `report` - The validation report to use for the simulation.
+    /// * `perceive_source` - The source of the perceive step (e.g. "on-chain mint", "planned
+    ///   config").
+    ///
+    /// # Returns
+    ///
+    /// A [`LaunchSimulation`] result containing the simulation results.
     fn build(
         config: LaunchConfig,
         report: ValidationReport,
@@ -128,8 +168,19 @@ impl ArcForgeLauncher {
     }
 }
 
-// ── Readiness scoring ─────────────────────────────────────────────────────────
-
+/// Calculates the readiness score for a launch simulation based on the validation report and
+/// liquidity metrics.
+///
+/// # Arguments
+///
+/// * `report` - The validation report to use for the simulation.
+/// * `metrics` - The liquidity metrics to use for the simulation.
+///
+/// # Returns
+///
+/// The readiness score as an `u8` value, where 0 is the lowest and 100 is the highest.
+///
+/// # User Accepted Prediction
 fn readiness_score(report: &ValidationReport, metrics: &LiquidityMetrics) -> u8 {
     let mut score: i32 = 100;
 
@@ -152,8 +203,18 @@ fn readiness_score(report: &ValidationReport, metrics: &LiquidityMetrics) -> u8 
     u8::try_from(score.clamp(0, 100)).unwrap_or(100)
 }
 
-// ── PEV narrative ─────────────────────────────────────────────────────────────
-
+/// Generates a summary of the PEV loop for a launch simulation.
+///
+/// # Arguments
+///
+/// * `source` - The source of the PEV loop summary.
+/// * `report` - The validation report to use for the simulation.
+/// * `metrics` - The liquidity metrics to use for the simulation.
+/// * `readiness` - The readiness score to use for the simulation.
+///
+/// # Returns
+///
+/// The PEV loop summary as a [`PevLoopSummary`] struct.
 fn pev_summary(
     source: &str,
     report: &ValidationReport,
@@ -226,9 +287,15 @@ fn pev_summary(
     }
 }
 
-// ── Synthetic mint ────────────────────────────────────────────────────────────
-
 /// Build a [`MintInfo`] representing the intended post-launch state of `config`.
+///
+/// # Arguments
+///
+/// * `config` - The launch configuration to use for the simulation.
+///
+/// # Returns
+///
+/// The [`MintInfo`] struct representing the synthetic mint.
 fn synthetic_mint(config: &LaunchConfig) -> MintInfo {
     MintInfo {
         address: format!("PLANNED:{}", config.token_symbol),
@@ -248,8 +315,15 @@ fn synthetic_mint(config: &LaunchConfig) -> MintInfo {
     }
 }
 
-// ── Display ───────────────────────────────────────────────────────────────────
-
+/// Pretty-print the full simulation report to stdout.
+///
+/// # Arguments
+///
+/// * `self` - The [`LaunchSimulation`] instance to print the report for.
+///
+/// # Returns
+///
+/// * `()` - This method does not return a value.
 impl LaunchSimulation {
     /// Pretty-print the full simulation report to stdout.
     pub fn print_report(&self) {
@@ -302,13 +376,23 @@ impl LaunchSimulation {
     }
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
+/// Tests for the [`ArcForge`] simulation functionality.
+///
+/// This module contains unit tests for the [`ArcForge`] simulation functionality,
+/// including tests for the PEV loop summary, synthetic mint, and launch simulation.
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::types::{LaunchConfig, LiquidityConfig, SolanaNetwork};
 
+    /// Returns a safe [`LaunchConfig`] for testing purposes.
+    ///
+    /// This function returns a [`LaunchConfig`] with default values suitable for testing,
+    /// ensuring that the simulation can run without requiring user input or external dependencies.
+    ///
+    /// # Returns
+    ///
+    /// A [`LaunchConfig`] with default values for testing.
     fn safe_config() -> LaunchConfig {
         LaunchConfig {
             token_name: "Polar Bear Token".to_string(),
@@ -329,10 +413,31 @@ mod tests {
         }
     }
 
+    /// Returns an [`ArcForgeLauncher`] instance for testing purposes.
+    ///
+    /// This function returns an [`ArcForgeLauncher`] instance configured to use the Solana Devnet
+    /// API, ensuring that the simulation can run without requiring user input or external
+    /// dependencies.
+    ///
+    /// # Returns
+    ///
+    /// An [`ArcForgeLauncher`] instance configured for testing.
     fn launcher() -> ArcForgeLauncher {
         ArcForgeLauncher::new("https://api.devnet.solana.com")
     }
 
+    /// Tests that a safe [`LaunchConfig`] results in a high readiness score and active
+    /// sniper bot prevention.
+    ///
+    /// This test verifies that a safe [`LaunchConfig`] results in a high readiness score and
+    /// active sniper bot prevention, ensuring that the simulation can run without requiring user
+    /// input or external dependencies.
+    ///
+    /// It uses the [`launcher`] function to create an [`ArcForgeLauncher`] instance and
+    /// [`safe_config`] to simulate a planned launch.
+    ///
+    /// The test asserts that the readiness score is ≥ 80 and that sniper bot prevention is active,
+    /// and that the simulation is always a dry run.
     #[test]
     fn safe_config_high_readiness() {
         let sim = launcher().simulate_planned_launch(safe_config());
@@ -345,6 +450,17 @@ mod tests {
         assert!(sim.dry_run, "simulation must always be dry-run");
     }
 
+    /// Tests that a dangerous [`LaunchConfig`] is blocked and the simulation is not a dry run.
+    ///
+    /// This test verifies that a dangerous [`LaunchConfig`] is blocked and the simulation is not
+    /// a dry run, ensuring that the simulation can run without requiring user input or external
+    /// dependencies.
+    ///
+    /// It uses the [`launcher`] function to create an [`ArcForgeLauncher`] instance and
+    /// [`safe_config`] to simulate a planned launch.
+    ///
+    /// The test asserts that the readiness score is < 80 and that sniper bot prevention is not
+    /// active, and that the simulation is not a dry run.
     #[test]
     fn dangerous_config_blocked() {
         let mut cfg = safe_config();
@@ -356,6 +472,21 @@ mod tests {
         assert!(sim.launch_readiness_score < 80);
     }
 
+    /// Tests that a safe [`LaunchConfig`] results in a high readiness score and active sniper
+    /// bot prevention.
+    ///
+    /// This test verifies that a safe [`LaunchConfig`] results in a high readiness score and
+    /// active sniper bot prevention, ensuring that the simulation can run without requiring user
+    /// input or external dependencies.
+    ///
+    /// It uses the [`launcher`] function to create an [`ArcForgeLauncher`] instance and
+    /// [`safe_config`] to simulate a planned launch.
+    ///
+    /// The test asserts that the readiness score is ≥ 80 and that sniper bot prevention is active,
+    /// and that the simulation is always a dry run.
+    ///
+    /// It also verifies that the PEV loop summary contains non-empty phases for all three
+    /// phases: perceive, evaluate, and validate.
     #[test]
     fn pev_loop_all_phases_populated() {
         let sim = launcher().simulate_planned_launch(safe_config());
@@ -364,12 +495,27 @@ mod tests {
         assert!(!sim.pev_loop_summary.validate.is_empty());
     }
 
+    /// Tests that the simulation always runs in dry run mode, regardless of the launch config.
+    ///
+    /// This test verifies that the simulation always runs in dry run mode, regardless of the
+    /// launch config. It uses the [`launcher`] function to create an [`ArcForgeLauncher`] instance
+    /// and [`safe_config`] to simulate a planned launch.
+    ///
+    /// The test asserts that the simulation is always a dry run.
     #[test]
     fn dry_run_always_true() {
         let sim = launcher().simulate_planned_launch(safe_config());
         assert!(sim.dry_run);
     }
 
+    /// Tests that the simulation result can be serialised and deserialised correctly.
+    ///
+    /// This test verifies that the simulation result can be serialised and deserialised correctly.
+    /// It uses the [`launcher`] function to create an [`ArcForgeLauncher`] instance and
+    /// [`safe_config`] to simulate a planned launch.
+    ///
+    /// The test asserts that the deserialised result matches the original simulation result,
+    /// including the token symbol and dry run flag.
     #[test]
     fn json_round_trip() {
         let sim = launcher().simulate_planned_launch(safe_config());

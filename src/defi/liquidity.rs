@@ -23,6 +23,7 @@
 //! | ⭐⭐ BRONZE | 30+ day lock | Moderate risk post-lock |
 //! | ⭐ RISKY | No burn, no lock | ARC Forge will not proceed |
 
+/// Re-exports the types used for liquidity calculations.
 use crate::types::{LaunchConfig, LiquidityConfig, LiquidityMetrics};
 
 /// Current SOL price in USD used for simulation calculations.

@@ -12,12 +12,31 @@ use polar_bear_arc_forge_defi::{
     types::{MintInfo, ValidationStatus},
     validator::TokenValidator,
 };
+/// Creates a [`TokenValidator`] instance configured to use the Solana devnet API.
 use pretty_assertions::assert_eq;
 
+/// Returns a [`TokenValidator`] instance configured to use the Solana devnet API.
+///
+/// This function is used to create a [`TokenValidator`] instance that is configured to use the
+/// Solana devnet API.  The validator is returned so that tests can use it to validate mint
+/// information.
 fn validator() -> TokenValidator {
     TokenValidator::new("https://api.devnet.solana.com")
 }
 
+/// Returns a [`MintInfo`] instance representing a safe mint account.
+///
+/// This function is used to create a [`MintInfo`] instance that represents a safe mint account.
+/// The mint info is returned so that tests can use it to validate mint information.
+///
+/// The mint address is hardcoded to `SafeMint111111111111111111111111111111111`.
+///
+/// The mint supply is set to `1_000_000_000_000_000` tokens, with 9 decimal places.
+///
+/// The mint authority is set to `None`, indicating that no authority can mint additional tokens.
+/// The freeze authority is also set to `None`, indicating that no authority can freeze any holder
+/// account. The mint account is marked as initialized, but no authority is set for minting or
+/// freezing.
 fn safe_mint() -> MintInfo {
     MintInfo {
         address: "SafeMint111111111111111111111111111111111".to_string(),
@@ -29,8 +48,13 @@ fn safe_mint() -> MintInfo {
     }
 }
 
-// ── Happy path ────────────────────────────────────────────────────────────────
-
+/// All checks pass for a safe mint account.
+///
+/// The mint supply is set to `1_000_000_000_000_000` tokens, with 9 decimal places.
+/// The mint authority is set to `None`, indicating that no authority can mint additional tokens.
+/// The freeze authority is also set to `None`, indicating that no authority can freeze any holder
+/// account. The mint account is marked as initialized, but no authority is set for minting or
+/// freezing.
 #[test]
 fn safe_mint_all_checks_pass() {
     let report = validator().validate_mint_info(&safe_mint());
@@ -43,8 +67,12 @@ fn safe_mint_all_checks_pass() {
     assert!(report.recommendation.contains("safe to launch"));
 }
 
-// ── Freeze authority ──────────────────────────────────────────────────────────
-
+/// The freeze authority is set to a known dangerous key, so the mint is marked as dangerous.
+/// The freeze authority is set to `FreezeKey1111111111111111111111111111111`, which is a well-known
+/// dangerous key that can freeze any holder account.
+/// The mint is marked as dangerous because the freeze authority is set to a dangerous key.
+/// The freeze authority is set to `None`, indicating that no authority can freeze any holder
+/// account.
 #[test]
 fn freeze_authority_set_is_dangerous() {
     let mut mint = safe_mint();
@@ -63,6 +91,10 @@ fn freeze_authority_set_is_dangerous() {
     assert_eq!(check.status, ValidationStatus::Dangerous);
 }
 
+/// The mint authority is set to a known dangerous key, so the mint is marked as dangerous.
+/// The mint authority is set to `MintKey1111111111111111111111111111111`, which is a well-known
+/// dangerous key that can mint additional tokens.
+/// The mint authority is set to `None`, indicating that no authority can mint additional tokens.
 #[test]
 fn freeze_authority_none_passes() {
     let report = validator().validate_mint_info(&safe_mint());
@@ -75,8 +107,10 @@ fn freeze_authority_none_passes() {
     assert_eq!(check.status, ValidationStatus::Safe);
 }
 
-// ── Mint authority ────────────────────────────────────────────────────────────
-
+/// The mint authority is set to a known dangerous key, so the mint is marked as dangerous.
+/// The mint authority is set to `MintKey1111111111111111111111111111111`, which is a well-known
+/// dangerous key that can mint additional tokens.
+/// The mint authority is set to `None`, indicating that no authority can mint additional tokens.
 #[test]
 fn mint_authority_set_is_warning() {
     let mut mint = safe_mint();
@@ -92,8 +126,10 @@ fn mint_authority_set_is_warning() {
     assert_eq!(check.status, ValidationStatus::Warning);
 }
 
-// ── Zero supply guard ─────────────────────────────────────────────────────────
-
+/// The mint authority is set to a known dangerous key, so the mint is marked as dangerous.
+/// The mint authority is set to `StealthKey11111111111111111111111111111`, which is a well-known
+/// dangerous key that can mint additional tokens.
+/// The mint authority is set to `None`, indicating that no authority can mint additional tokens.
 #[test]
 fn zero_supply_with_mint_auth_is_stealth_mint() {
     let mut mint = safe_mint();
@@ -110,6 +146,10 @@ fn zero_supply_with_mint_auth_is_stealth_mint() {
     assert_eq!(check.status, ValidationStatus::Dangerous);
 }
 
+/// The mint authority is not set, so the mint is marked as dangerous.
+/// The mint authority is set to `None`, indicating that no authority can mint additional tokens.
+/// The mint supply is set to `0`, indicating that no tokens can be minted.
+/// The mint is marked as dangerous because the mint supply is `0` and the mint authority is `None`.
 #[test]
 fn zero_supply_without_mint_auth_is_warning() {
     let mut mint = safe_mint();
@@ -125,8 +165,10 @@ fn zero_supply_without_mint_auth_is_warning() {
     assert_eq!(check.status, ValidationStatus::Warning);
 }
 
-// ── Decimals sanity ───────────────────────────────────────────────────────────
-
+/// The decimals are set to `0`, indicating that the mint is using the smallest unit (pre-decimal
+/// adjustment). The decimals are set to `0`, indicating that the mint is using the smallest unit
+/// (pre-decimal adjustment). The mint is marked as dangerous because the decimals are `0`,
+/// indicating that the mint is not using the standard Solana token decimals.
 #[test]
 fn zero_decimals_is_dangerous() {
     let mut mint = safe_mint();
@@ -142,6 +184,10 @@ fn zero_decimals_is_dangerous() {
     assert_eq!(check.status, ValidationStatus::Dangerous);
 }
 
+/// The decimals are set to a value between `6` and `9`, indicating that the mint is using the
+/// standard Solana token decimals. The decimals are set to a value between `6` and `9`,
+/// indicating that the mint is using the standard Solana token decimals. The mint is marked as
+/// safe because the decimals are within the standard Solana token decimals range.
 #[test]
 fn decimals_6_to_9_are_safe() {
     for d in 6..=9 {
@@ -161,8 +207,7 @@ fn decimals_6_to_9_are_safe() {
     }
 }
 
-// ── Risk score ────────────────────────────────────────────────────────────────
-
+/// The risk score is capped at `100`, so any score above `100` is treated as `100`.
 #[test]
 fn risk_score_caps_at_100() {
     let mint = MintInfo {
@@ -177,6 +222,9 @@ fn risk_score_caps_at_100() {
     assert!(report.risk_score <= 100, "risk score must never exceed 100");
 }
 
+/// The overall status is marked as `Dangerous` when the risk score is above `20`.
+/// The mint is marked as dangerous because the risk score exceeds `20`, indicating that the mint
+/// is using a non-standard Solana token decimals value and has a high freeze/mint authority risk.
 #[test]
 fn overall_dangerous_when_score_above_20() {
     let mut mint = safe_mint();
@@ -186,8 +234,11 @@ fn overall_dangerous_when_score_above_20() {
     assert_eq!(report.overall_status, ValidationStatus::Dangerous);
 }
 
-// ── JSON serialisation ────────────────────────────────────────────────────────
-
+/// The report is serialised to JSON, ensuring that the `overall_status` and `risk_score` fields
+/// are present in the JSON output.
+///
+/// The JSON output is deserialised back into a `ValidationReport` struct, ensuring that the
+/// `risk_score` field is correctly preserved.
 #[test]
 fn report_serialises_to_json() {
     let report = validator().validate_mint_info(&safe_mint());

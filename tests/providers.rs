@@ -10,14 +10,29 @@
 //!
 //! Use `--test-threads=1` to avoid concurrent API calls hitting rate limits.
 
+/// Tests for the AI agent provider.
+///
+/// These tests verify the AI agent provider's ability to compute anti-rug ratings and
+/// generate launch reviews based on the provided configuration.
+///
+/// These tests are **ignored in CI** and must be run manually with `ANTHROPIC_API_KEY` set.
 #[cfg(feature = "ai-agent")]
 mod agent_tests {
+    /// Tests that the AI agent returns a non-empty analysis.
     use polar_bear_arc_forge_defi::{
         agent::ArcForgeAgent,
         forge::ArcForgeLauncher,
         types::{LaunchConfig, LiquidityConfig, SolanaNetwork},
     };
 
+    /// Returns a safe launch configuration for testing.
+    ///
+    /// This configuration is safe to use in tests, as it does not require an API key.
+    /// It uses a test token name and symbol, and a small total supply for quick execution.
+    ///
+    /// # Returns
+    ///
+    /// A `LaunchConfig` instance with the safe test configuration.
     fn safe_config() -> LaunchConfig {
         LaunchConfig {
             token_name: "Live Test Token".to_string(),
@@ -39,6 +54,13 @@ mod agent_tests {
     }
 
     /// Verify the agent returns a non-empty analysis string.
+    ///
+    /// This test runs the AI agent with a safe configuration and verifies that it returns a
+    /// non-empty string.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the agent call fails or returns an empty string.
     #[tokio::test]
     #[ignore = "requires ANTHROPIC_API_KEY and --features ai-agent"]
     async fn live_agent_returns_non_empty_analysis() {
@@ -55,6 +77,13 @@ mod agent_tests {
     }
 
     /// Verify the analysis contains one of the expected recommendation strings.
+    ///
+    /// This test verifies that the AI agent returns an analysis that mentions one of the
+    /// expected recommendation strings: LAUNCH, REVIEW, or BLOCK.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the agent call fails or returns an empty string.
     #[tokio::test]
     #[ignore = "requires ANTHROPIC_API_KEY and --features ai-agent"]
     async fn live_agent_mentions_launch_review_or_block() {

@@ -7,6 +7,8 @@
 //! export ANTHROPIC_API_KEY=sk-ant-...
 //! ```
 
+/// The `ArcForgeAgent` is an AI agent that uses the ARC (Anthropic) API to analyse simulations.
 pub mod arc_forge_agent;
 
+/// Re-exports the `ArcForgeAgent` struct.
 pub use arc_forge_agent::ArcForgeAgent;
