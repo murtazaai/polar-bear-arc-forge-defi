@@ -109,22 +109,29 @@
   // ── DOCS ───────────────────────────────────────────────────────────────────
 
   {
-    "label": "doc · open (dev)",
+    "label": "doc - all features (docs.rs mode, open in browser)",
     "command": "cargo",
-    "args": ["doc", "--no-deps", "--open"],
-    "env": {
-      "RUST_LOG": "warn",
-    },
-  },
-  {
-    "label": "doc · all features (docs.rs simulation)",
-    // Mirrors [package.metadata.docs.rs] in Cargo.toml:
-    //   all-features = true  +  rustdoc-args = ["--cfg", "docsrs"]
-    "command": "cargo",
-    "args": ["doc", "--no-deps", "--all-features", "--open"],
+    "args": [
+      "doc",
+      "--all-features",
+      "--no-deps",
+      "--open",
+      "--document-private-items",
+    ],
     "env": {
       "RUSTDOCFLAGS": "--cfg docsrs",
     },
+    "allow_concurrent_runs": false,
+    "use_new_terminal": false,
+    "reveal": "always",
+  },
+  {
+    "label": "doc - default features only",
+    "command": "cargo",
+    "args": ["doc", "--no-deps", "--document-private-items"],
+    "allow_concurrent_runs": false,
+    "use_new_terminal": false,
+    "reveal": "always",
   },
 
   // ── TEST ───────────────────────────────────────────────────────────────────

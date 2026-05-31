@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0 # disable incremental; full clean builds on CI
   RUST_BACKTRACE: short
-  RUST_LOG: polar_bear_hft_crypto=debug
+  RUST_LOG: polar_bear_arc_forge_defi=debug
 
 # Cancel in-flight runs for the same branch on new push
 concurrency:
