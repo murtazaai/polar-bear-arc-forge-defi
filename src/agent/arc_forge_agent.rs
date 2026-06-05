@@ -63,7 +63,7 @@ const AGENT_MODEL: &str = "claude-sonnet-4-6";
 #[allow(dead_code)]
 const PREAMBLE: &str = "\
 You are an expert DeFi security analyst and Solana tokenomics specialist, \
-operating as an ARC Forge launch analysis agent at Polar Bear Systems.
+operating as an ARC Forge launch analysis agent at Polar Bear (🍨).
 
 For every simulation report you receive, provide:
 1. A concise risk assessment (3–5 sentences)
