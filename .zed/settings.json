@@ -12,69 +12,79 @@
       "format_on_save": "on",
       "formatter": {
         "language_server": {
-          "name": "rust-analyzer"
-        }
-      }
-    }
+          "name": "rust-analyzer",
+        },
+      },
+    },
   },
 
   "lsp": {
     "rust-analyzer": {
       "initialization_options": {
-        // ── Check / lint ─────────────────────────────────────────────────────
-        // Use clippy for on-save diagnostics - matches CI (`-D warnings`).
+        // Run clippy (not cargo check) on save to match [lints.clippy] in Cargo.toml.
+        // pedantic + all with the same allow-list as .clippy.toml.
         "check": {
           "command": "clippy",
-          "extraArgs": ["--", "-D", "warnings"],
-          "allTargets": true
+          "extraArgs": [
+            // "--all-targets",
+            "--",
+            "-D",
+            "warnings",
+            "-A",
+            "clippy::module_name_repetitions",
+            "-A",
+            "clippy::must_use_candidate",
+            "-A",
+            "clippy::missing_errors_doc",
+          ],
         },
 
         // ── Target directory ─────────────────────────────────────────────────
         // Keeps rust-analyzer incremental artefacts separate from `cargo build`
         // output so neither invalidates the other's cache.
         "rust": {
-          "analyzerTargetDir": "target/rust-analyzer"
+          "analyzerTargetDir": "target/rust-analyzer",
         },
 
         // ── Proc macros ──────────────────────────────────────────────────────
         // Required for tokio::main, clap derive, thiserror, serde derive.
         "procMacro": {
-          "enable": true
+          "enable": true,
         },
 
         // ── Inlay hints ──────────────────────────────────────────────────────
         // Full type inference hints - valuable for complex async + rig-core generics.
         "inlayHints": {
           "typeHints": {
-            "enable": true
+            "enable": true,
           },
           "parameterHints": {
-            "enable": true
+            "enable": true,
           },
           "chainingHints": {
-            "enable": true
+            "enable": true,
           },
           "closureCaptureHints": {
-            "enable": true
+            "enable": true,
           },
           "reborrowHints": {
-            "enable": "mutable"
+            "enable": "mutable",
           },
           "lifetimeElisionHints": {
-            "enable": "skip_trivial"
-          }
+            "enable": "skip_trivial",
+          },
         },
 
         // ── Imports ──────────────────────────────────────────────────────────
         // Mirrors rustfmt.toml: imports_granularity = "Crate"
         "imports": {
           "granularity": {
-            "group": "crate"
+            "group": "crate",
           },
           "prefix": "plain",
           "group": {
-            "enable": true
-          }
+            "enable": true,
+          },
         },
 
         // ── Cargo ────────────────────────────────────────────────────────────
@@ -83,10 +93,10 @@
           "allFeatures": true,
           "loadOutDirsFromCheck": true,
           "buildScripts": {
-            "enable": true
-          }
-        }
-      }
-    }
-  }
+            "enable": true,
+          },
+        },
+      },
+    },
+  },
 }
