@@ -1,23 +1,105 @@
-name: CI
+name: CI # Workflow display name
+# run-name: ${{ github.actor }} triggered  # Run display name
 
-on:
+on: # Triggers (required)
   push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
+    branches: [main, master] # [main, dev]
+    # branches-ignore: [temp/**]
+    #     tags: ['v*']
+    #     paths: ['src/**']
 
-env:
+  pull_request:
+    # types: [opened, synchronize, reopened]
+    branches: [main, master]
+# schedule:
+#   - cron: '0 9 * * 1'     # Every Monday 9am UTC
+
+# workflow_dispatch:  # Manual trigger
+#   inputs:
+#     env:
+#       description: 'Environment'
+#       required: true
+#       default: 'staging'
+#       type: choice
+#       options: [staging, prod]
+
+env: # Global env vars
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0 # disable incremental; full clean builds on CI
   RUST_BACKTRACE: short
   RUST_LOG: polar_bear_arc_forge_defi=debug
 
+# defaults: ... # Default settings
+
 # Cancel in-flight runs for the same branch on new push
-concurrency:
+concurrency: # Concurrency control
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-jobs:
+# jobs:
+#   build:
+#     name: Build App
+#     runs-on: ubuntu-latest   # or windows-latest, macos-latest
+#     timeout-minutes: 30
+#     needs: [test]            # Job dependencies
+#     if: github.ref == 'refs/heads/main'
+#     environment: production  # Deployment environment
+#     outputs:
+#       version: ${{ steps.get-version.outputs.version }}
+#     env:
+#       NODE_ENV: production
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         node: [18, 20]
+#         os: [ubuntu-latest, windows-latest]
+#     steps: ... # next section
+
+# steps:
+#   - name: Checkout
+#     uses: actions/checkout@v4 # next section
+#     with:
+#       fetch-depth: 0
+
+#   - name: Run script
+#     run: |
+#       echo "Hello"
+#       npm ci
+#     shell: bash
+#     working-directory: ./app
+#     env:
+#       TOKEN: ${{ secrets.MY_TOKEN }}
+#     id: my-step
+#     if: success()
+#     continue-on-error: true
+#     timeout-minutes: 5
+
+# uses: actions/checkout@v4
+# uses: actions/setup-node@v4
+#   with:
+#     node-version: '20'
+#     cache: 'npm'
+
+# uses: actions/setup-python@v5
+#   with:
+#     python-version: '3.12'
+
+# uses: actions/cache@v4
+#   with:
+#     path: ~/.npm
+#     key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+# uses: actions/upload-artifact@v4
+#   with:
+#     name: build-output
+#     path: dist/
+
+# uses: actions/download-artifact@v4
+
+# uses: docker/login-action@v3
+# uses: docker/build-push-action@v5
+
+jobs: # Jobs (required)
   # ── 1. Format ───────────────────────────────────────────────────────────────
   fmt:
     name: Rustfmt
@@ -195,3 +277,60 @@ jobs:
 
       - name: cargo check (MSRV, ai-agent feature)
         run: cargo check --all-targets --features ai-agent
+
+# permissions: ...            # GitHub token permissions # in later section
+
+# workflow_call:             # Reusable workflow
+#   release:
+#     types: [published]
+
+# Contexts & Expressions
+# ${{ github.sha }}
+# ${{ github.ref }}
+# ${{ github.event_name }}
+# ${{ github.actor }}
+# ${{ github.repository }}
+# ${{ runner.os }}
+# ${{ env.MY_VAR }}
+# ${{ secrets.MY_SECRET }}
+# ${{ vars.MY_VAR }}           # Repository variables
+# ${{ inputs.my_input }}
+# ${{ needs.build.outputs.version }}
+# ${{ matrix.node }}
+# ${{ steps.my-step.outputs.result }}
+
+# if conditions
+# if: github.event_name == 'push'
+# if: github.ref == 'refs/heads/main'
+# if: contains(github.ref, 'tags')
+# if: failure()
+# if: success()
+# if: always()
+# if: cancelled()
+# if: ${{ !cancelled() }}
+
+# concurrency
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.ref }}
+#   cancel-in-progress: true
+
+# permissions
+# permissions:
+#   contents: read
+#   packages: write
+#   id-token: write        # For OIDC
+#   pull-requests: write
+#   issues: write
+#   actions: read
+
+# defaults
+# defaults:
+#   run:
+#     shell: bash
+#     working-directory: ./src
+
+# Secrets & Variables
+# env:
+#   MY_SECRET: ${{ secrets.MY_SECRET }}   # Repo/org secret
+#   MY_VAR: ${{ vars.MY_VAR }}            # Repo/org variable
+#   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Auto-provided
